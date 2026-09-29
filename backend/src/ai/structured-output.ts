@@ -1,5 +1,8 @@
+import { Logger } from '@nestjs/common';
 import type { z } from 'zod';
 import type { ChatMessage, ChatModel } from './chat-model';
+
+const logger = new Logger('AI');
 
 export class AiOutputError extends Error {}
 
@@ -25,36 +28,48 @@ export async function completeStructured<T>(
   schema: z.ZodType<T>,
 ): Promise<T> {
   let conversation = messages;
-  let lastProblem = '';
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const reply = await model.complete(conversation);
-    let parsed: unknown;
-    try {
-      parsed = extractJson(reply);
-    } catch (err) {
-      lastProblem = `Your reply was not valid JSON (${(err as Error).message}).`;
-      conversation = withCorrection(messages, reply, lastProblem);
-      continue;
-    }
-    const result = schema.safeParse(parsed);
-    if (result.success) return result.data;
+    const problem = validationProblem(reply, schema);
+    if (problem.ok) return problem.data;
 
-    lastProblem = result.error.issues
-      .slice(0, 8)
-      .map((i) => `- ${i.path.join('.') || '(root)'}: ${i.message}`)
-      .join('\n');
-    conversation = withCorrection(
-      messages,
-      reply,
-      `Your JSON did not match the schema:\n${lastProblem}`,
-    );
+    // Logs only the validation errors: never the prompt, the code or the reply.
+    logger.warn(`Structured output attempt ${attempt}/${MAX_ATTEMPTS} invalid: ${problem.summary}`);
+    conversation = withCorrection(messages, reply, problem.feedback);
   }
 
   throw new AiOutputError(
     `The AI provider returned output that did not match the required format after ${MAX_ATTEMPTS} attempts. ` +
       'Try again, or use a more capable model.',
   );
+}
+
+type Checked<T> = { ok: true; data: T } | { ok: false; summary: string; feedback: string };
+
+function validationProblem<T>(reply: string, schema: z.ZodType<T>): Checked<T> {
+  let parsed: unknown;
+  try {
+    parsed = extractJson(reply);
+  } catch (err) {
+    const message = (err as Error).message;
+    return {
+      ok: false,
+      summary: `not JSON (${message})`,
+      feedback: `Your reply was not valid JSON (${message}).`,
+    };
+  }
+  const result = schema.safeParse(parsed);
+  if (result.success) return { ok: true, data: result.data };
+  const errors = result.error.issues
+    .slice(0, 8)
+    .map((i) => `- ${i.path.join('.') || '(root)'}: ${i.message}`)
+    .join('\n');
+  return {
+    ok: false,
+    summary: errors.replace(/\n/g, ' '),
+    feedback: `Your JSON did not match the schema:\n${errors}`,
+  };
 }
 
 function withCorrection(original: ChatMessage[], reply: string, problem: string): ChatMessage[] {
