@@ -64,6 +64,11 @@ export function Field({
   );
 }
 
+/** Page-level wrapper for loading and error states in full-bleed layouts. */
+export function Padded({ children }: { children: ReactNode }) {
+  return <div className="mx-auto max-w-5xl px-4 py-4">{children}</div>;
+}
+
 export function Spinner() {
   return (
     <span

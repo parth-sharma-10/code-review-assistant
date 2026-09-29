@@ -9,25 +9,27 @@ import { useProject } from "./project-context";
 import { ProviderSelect } from "./provider-select";
 import { Button, ErrorNote } from "./ui";
 
-const TYPES = [
+type ReviewMode = "SECURITY" | "PERFORMANCE" | "QUALITY";
+
+const TYPES: RadioOption<ReviewMode>[] = [
   {
     value: "SECURITY",
     label: "Security",
-    hint: "Secrets, auth, injection, validation, data exposure",
+    detail: "Secrets, auth, injection, validation, data exposure",
   },
   {
     value: "PERFORMANCE",
     label: "Performance",
-    hint: "Algorithms, N+1 queries, blocking work, memory",
+    detail: "Algorithms, N+1 queries, blocking work, memory",
   },
   {
     value: "QUALITY",
     label: "Code quality",
-    hint: "Naming, structure, duplication, error handling",
+    detail: "Naming, structure, duplication, error handling",
   },
-] as const;
+];
 
-const MAX_SELECTED = 50;
+export const MAX_SELECTED = 50;
 
 interface Props {
   projectId: string;
@@ -35,6 +37,20 @@ interface Props {
   selectedIds: string[];
   totalFiles: number;
   onClearSelection: () => void;
+}
+
+/**
+ * The scope actually sent: the user's choice, falling back when it no longer applies
+ * (selection cleared → this file; no open file → whole project).
+ */
+export function resolveScope(
+  chosen: ReviewScope,
+  activeFileId: string | null,
+  selectedIds: string[],
+): { scope: ReviewScope; fileIds?: string[] } {
+  if (chosen === "FILES" && selectedIds.length > 0) return { scope: "FILES", fileIds: selectedIds };
+  if (chosen !== "PROJECT" && activeFileId) return { scope: "FILE", fileIds: [activeFileId] };
+  return { scope: "PROJECT" };
 }
 
 export function ReviewRunner({
@@ -46,35 +62,21 @@ export function ReviewRunner({
 }: Props) {
   const router = useRouter();
   const { reload: reloadProject } = useProject();
-  const [type, setType] = useState<(typeof TYPES)[number]["value"]>("SECURITY");
-  const [scope, setScope] = useState<ReviewScope>("FILE");
+  const [type, setType] = useState<ReviewMode>("SECURITY");
+  const [chosenScope, setChosenScope] = useState<ReviewScope>("FILE");
   const [providerId, setProviderId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Scope follows what the user has picked unless they chose otherwise.
-  const effectiveScope: ReviewScope =
-    scope === "FILES" && selectedIds.length === 0
-      ? "FILE"
-      : scope === "FILE" && !activeFile
-        ? "PROJECT"
-        : scope;
-  const fileIds =
-    effectiveScope === "FILE"
-      ? activeFile
-        ? [activeFile.id]
-        : []
-      : effectiveScope === "FILES"
-        ? selectedIds
-        : undefined;
-  const tooMany = effectiveScope === "FILES" && selectedIds.length > MAX_SELECTED;
+  const { scope, fileIds } = resolveScope(chosenScope, activeFile?.id ?? null, selectedIds);
+  const tooMany = scope === "FILES" && selectedIds.length > MAX_SELECTED;
 
   async function run() {
     setBusy(true);
     setError(null);
     try {
       const review = await api<ReviewDetail>(`/projects/${projectId}/reviews`, {
-        body: { type, scope: effectiveScope, fileIds, providerId: providerId || undefined },
+        body: { type, scope, fileIds, providerId: providerId || undefined },
       });
       reloadProject(); // review count in the project header
       router.push(`/projects/${projectId}/reviews/${review.id}`);
@@ -84,7 +86,7 @@ export function ReviewRunner({
     }
   }
 
-  const scopes: { value: ReviewScope; label: string; detail: string; disabled: boolean }[] = [
+  const scopes: RadioOption<ReviewScope>[] = [
     {
       value: "FILE",
       label: "This file",
@@ -101,55 +103,21 @@ export function ReviewRunner({
       value: "PROJECT",
       label: "Whole project",
       detail: `${plural(totalFiles, "file")}, most relevant first, within the model's context budget`,
-      disabled: false,
     },
   ];
 
   return (
     <div className="space-y-4">
-      <fieldset className="space-y-1.5">
-        <legend className="mb-1 text-sm font-medium">Review type</legend>
-        {TYPES.map((t) => (
-          <label
-            key={t.value}
-            className="flex cursor-pointer gap-2 rounded-[4px] px-2 py-1 hover:bg-wash"
-          >
-            <input
-              type="radio"
-              name="type"
-              checked={type === t.value}
-              onChange={() => setType(t.value)}
-              className="mt-1 accent-ink"
-            />
-            <span>
-              <span className="block text-sm text-ink">{t.label}</span>
-              <span className="block text-xs text-ink-3">{t.hint}</span>
-            </span>
-          </label>
-        ))}
-      </fieldset>
-
-      <fieldset className="space-y-1.5">
-        <legend className="mb-1 text-sm font-medium">Scope</legend>
-        {scopes.map((s) => (
-          <label
-            key={s.value}
-            className={`flex gap-2 rounded-[4px] px-2 py-1 ${s.disabled ? "opacity-50" : "cursor-pointer hover:bg-wash"}`}
-          >
-            <input
-              type="radio"
-              name="scope"
-              disabled={s.disabled}
-              checked={effectiveScope === s.value}
-              onChange={() => setScope(s.value)}
-              className="mt-1 accent-ink"
-            />
-            <span className="min-w-0">
-              <span className="block text-sm text-ink">{s.label}</span>
-              <span className="block break-words font-mono text-xs text-ink-3">{s.detail}</span>
-            </span>
-          </label>
-        ))}
+      <RadioList legend="Review type" name="type" options={TYPES} value={type} onChange={setType} />
+      <div className="space-y-1.5">
+        <RadioList
+          legend="Scope"
+          name="scope"
+          options={scopes}
+          value={scope}
+          onChange={setChosenScope}
+          mono
+        />
         {selectedIds.length > 0 && (
           <button
             onClick={onClearSelection}
@@ -159,13 +127,62 @@ export function ReviewRunner({
           </button>
         )}
         {tooMany && <p className="text-xs text-critical">Select at most {MAX_SELECTED} files.</p>}
-      </fieldset>
-
+      </div>
       <ProviderSelect value={providerId} onChange={setProviderId} />
       <ErrorNote>{error}</ErrorNote>
       <Button variant="primary" className="w-full" onClick={run} busy={busy} disabled={tooMany}>
         {busy ? "Reviewing… this can take a minute" : "Run review"}
       </Button>
     </div>
+  );
+}
+
+interface RadioOption<T extends string> {
+  value: T;
+  label: string;
+  detail: string;
+  disabled?: boolean;
+}
+
+function RadioList<T extends string>({
+  legend,
+  name,
+  options,
+  value,
+  onChange,
+  mono,
+}: {
+  legend: string;
+  name: string;
+  options: RadioOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  mono?: boolean;
+}) {
+  return (
+    <fieldset className="space-y-1.5">
+      <legend className="mb-1 text-sm font-medium">{legend}</legend>
+      {options.map((o) => (
+        <label
+          key={o.value}
+          className={`flex gap-2 rounded-[4px] px-2 py-1 ${o.disabled ? "opacity-50" : "cursor-pointer hover:bg-wash"}`}
+        >
+          <input
+            type="radio"
+            name={name}
+            disabled={o.disabled}
+            checked={value === o.value}
+            onChange={() => onChange(o.value)}
+            className="mt-1 accent-ink"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm text-ink">{o.label}</span>
+            <span className={`block break-words text-xs text-ink-3 ${mono ? "font-mono" : ""}`}>
+              {o.detail}
+            </span>
+          </span>
+        </label>
+      ))}
+    </fieldset>
   );
 }

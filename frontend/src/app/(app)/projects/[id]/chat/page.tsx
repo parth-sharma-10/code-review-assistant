@@ -46,7 +46,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="mx-auto grid max-w-[1600px] lg:h-full lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:h-full lg:grid-cols-[240px_minmax(0,1fr)]">
       <aside className="border-b border-rule bg-sheet p-3 lg:overflow-y-auto lg:border-r lg:border-b-0">
         <Button onClick={newChat} className="mb-3 w-full">
           New chat
@@ -132,32 +132,11 @@ function Conversation({
     }
   }
 
-  function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send(draft);
-    }
-  }
-
   return (
-    <section className="flex min-h-[60vh] flex-col" aria-label="Conversation">
+    <section className="flex min-h-[60vh] min-w-0 flex-col" aria-label="Conversation">
       <div className="flex-1 space-y-5 overflow-y-auto px-4 py-6" aria-live="polite">
         {history.loading && <Loading label="Loading conversation" />}
-        {!history.loading && messages.length === 0 && !pending && (
-          <div className="mx-auto max-w-2xl">
-            <p className="text-sm text-ink-2">
-              Ask a question about the uploaded code. Each answer is based on the files a keyword
-              search ranks as most relevant, listed under the answer.
-            </p>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {EXAMPLES.map((q) => (
-                <li key={q}>
-                  <Button onClick={() => send(q)}>{q}</Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {!history.loading && messages.length === 0 && !pending && <Examples onAsk={send} />}
         {messages.map((m) => (
           <Message key={m.id} message={m} projectId={projectId} />
         ))}
@@ -180,41 +159,91 @@ function Conversation({
         )}
         <div ref={end} />
       </div>
-      <form
-        onSubmit={(e: FormEvent) => {
-          e.preventDefault();
-          send(draft);
-        }}
-        className="border-t border-rule bg-sheet p-3"
-      >
-        <div className="mx-auto max-w-2xl space-y-2">
-          <ErrorNote>{error}</ErrorNote>
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={onKeyDown}
-            rows={2}
-            maxLength={4000}
-            placeholder="Ask about the code. Enter to send, Shift+Enter for a new line."
-            aria-label="Question"
-            className="w-full resize-y rounded-[4px] border border-rule bg-sheet px-3 py-2 text-sm focus:border-ink focus:outline-none"
-          />
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <ProviderSelect value={providerId} onChange={setProviderId} />
-            </div>
-            <Button
-              type="submit"
-              variant="primary"
-              busy={pending !== null}
-              disabled={!draft.trim()}
-            >
-              Send
-            </Button>
-          </div>
-        </div>
-      </form>
+      <Composer
+        draft={draft}
+        onDraftChange={setDraft}
+        onSend={() => send(draft)}
+        busy={pending !== null}
+        error={error}
+        providerId={providerId}
+        onProviderChange={setProviderId}
+      />
     </section>
+  );
+}
+
+function Examples({ onAsk }: { onAsk: (question: string) => void }) {
+  return (
+    <div className="mx-auto max-w-2xl">
+      <p className="text-sm text-ink-2">
+        Ask a question about the uploaded code. Each answer is based on the files a keyword search
+        ranks as most relevant, listed under the answer.
+      </p>
+      <ul className="mt-3 flex flex-wrap gap-2">
+        {EXAMPLES.map((q) => (
+          <li key={q}>
+            <Button onClick={() => onAsk(q)}>{q}</Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Composer({
+  draft,
+  onDraftChange,
+  onSend,
+  busy,
+  error,
+  providerId,
+  onProviderChange,
+}: {
+  draft: string;
+  onDraftChange: (value: string) => void;
+  onSend: () => void;
+  busy: boolean;
+  error: string | null;
+  providerId: string;
+  onProviderChange: (id: string) => void;
+}) {
+  function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSend();
+    }
+  }
+
+  return (
+    <form
+      onSubmit={(e: FormEvent) => {
+        e.preventDefault();
+        onSend();
+      }}
+      className="border-t border-rule bg-sheet p-3"
+    >
+      <div className="mx-auto max-w-2xl space-y-2">
+        <ErrorNote>{error}</ErrorNote>
+        <textarea
+          value={draft}
+          onChange={(e) => onDraftChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          rows={2}
+          maxLength={4000}
+          placeholder="Ask about the code. Enter to send, Shift+Enter for a new line."
+          aria-label="Question"
+          className="w-full resize-y rounded-[4px] border border-rule bg-sheet px-3 py-2 text-sm focus:border-ink focus:outline-none"
+        />
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <ProviderSelect value={providerId} onChange={onProviderChange} />
+          </div>
+          <Button type="submit" variant="primary" busy={busy} disabled={!draft.trim()}>
+            Send
+          </Button>
+        </div>
+      </div>
+    </form>
   );
 }
 

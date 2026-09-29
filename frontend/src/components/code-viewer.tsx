@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import type { ThemedToken } from "shiki/core";
 import { KEYWORD_COLOR, MAX_HIGHLIGHT_CHARS, tokenize } from "@/lib/highlight";
 import type { ReviewIssue } from "@/lib/types";
@@ -20,32 +20,15 @@ interface Props {
  * writes in the margin of a printout, and the cited line gets the highlighter.
  */
 export function CodeViewer({ path, content, focusLine, annotations = [] }: Props) {
-  const [tokens, setTokens] = useState<{ path: string; lines: ThemedToken[][] } | null>(null);
+  const tokens = useTokens(content, path);
   const focusRef = useRef<HTMLTableRowElement>(null);
   const lines = content.split("\n");
-
-  useEffect(() => {
-    let cancelled = false;
-    tokenize(content, path.split("/").pop() ?? path)
-      .then((result) => !cancelled && setTokens(result ? { path, lines: result } : null))
-      .catch(() => !cancelled && setTokens(null)); // fall back to plain text
-    return () => {
-      cancelled = true;
-    };
-  }, [content, path]);
 
   useEffect(() => {
     focusRef.current?.scrollIntoView({ block: "center" });
   }, [focusLine, path, tokens]);
 
-  const byLine = new Map<number, ReviewIssue[]>();
-  const fileLevel: ReviewIssue[] = [];
-  for (const issue of annotations) {
-    if (issue.line && issue.line <= lines.length)
-      byLine.set(issue.line, [...(byLine.get(issue.line) ?? []), issue]);
-    else fileLevel.push(issue);
-  }
-  const highlighted = tokens?.path === path ? tokens.lines : null;
+  const { byLine, fileLevel } = groupByLine(annotations, lines.length);
   const gutterWidth = `${String(lines.length).length + 2}ch`;
 
   return (
@@ -60,43 +43,97 @@ export function CodeViewer({ path, content, focusLine, annotations = [] }: Props
       ))}
       <table className="w-full border-collapse">
         <tbody>
-          {lines.map((line, i) => {
-            const n = i + 1;
-            const isFocus = n === focusLine;
-            const notes = byLine.get(n);
-            return [
-              <tr
-                key={n}
-                ref={isFocus ? focusRef : undefined}
-                className={isFocus || notes ? "bg-marker/70" : undefined}
-              >
-                <td
-                  style={{ width: gutterWidth }}
-                  className={`select-none border-r pr-3 text-right align-top tabular-nums ${
-                    isFocus || notes ? "border-marker-edge text-ink" : "border-rule text-ink-3"
-                  }`}
-                >
-                  {n}
-                </td>
-                <td className="whitespace-pre pl-4 pr-6 align-top">
-                  {highlighted?.[i] ? <Tokens tokens={highlighted[i]} /> : line || " "}
-                </td>
-              </tr>,
-              notes && (
-                <tr key={`${n}-notes`}>
-                  <td className="border-r border-rule" />
-                  <td className="py-1 pl-4 pr-6">
-                    {notes.map((issue, j) => (
-                      <Annotation key={j} issue={issue} />
-                    ))}
-                  </td>
-                </tr>
-              ),
-            ];
-          })}
+          {lines.map((text, i) => (
+            <Line
+              key={i}
+              n={i + 1}
+              text={text}
+              tokens={tokens?.[i]}
+              notes={byLine.get(i + 1)}
+              focused={i + 1 === focusLine}
+              focusRef={focusRef}
+              gutterWidth={gutterWidth}
+            />
+          ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Syntax tokens for the current file, or null while loading / for unsupported languages. */
+function useTokens(content: string, path: string): ThemedToken[][] | null {
+  const [state, setState] = useState<{ path: string; lines: ThemedToken[][] } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    tokenize(content, path.split("/").pop() ?? path)
+      .then((result) => !cancelled && setState(result ? { path, lines: result } : null))
+      .catch(() => !cancelled && setState(null)); // fall back to plain text
+    return () => {
+      cancelled = true;
+    };
+  }, [content, path]);
+  return state?.path === path ? state.lines : null;
+}
+
+/** Findings with a usable line go under that line; the rest are shown above the listing. */
+function groupByLine(annotations: ReviewIssue[], lineCount: number) {
+  const byLine = new Map<number, ReviewIssue[]>();
+  const fileLevel: ReviewIssue[] = [];
+  for (const issue of annotations) {
+    if (issue.line && issue.line <= lineCount) {
+      byLine.set(issue.line, [...(byLine.get(issue.line) ?? []), issue]);
+    } else {
+      fileLevel.push(issue);
+    }
+  }
+  return { byLine, fileLevel };
+}
+
+function Line({
+  n,
+  text,
+  tokens,
+  notes,
+  focused,
+  focusRef,
+  gutterWidth,
+}: {
+  n: number;
+  text: string;
+  tokens?: ThemedToken[];
+  notes?: ReviewIssue[];
+  focused: boolean;
+  focusRef: RefObject<HTMLTableRowElement | null>;
+  gutterWidth: string;
+}) {
+  const marked = focused || Boolean(notes);
+  return (
+    <>
+      <tr ref={focused ? focusRef : undefined} className={marked ? "bg-marker/70" : undefined}>
+        <td
+          style={{ width: gutterWidth }}
+          className={`select-none border-r pr-3 text-right align-top tabular-nums ${
+            marked ? "border-marker-edge text-ink" : "border-rule text-ink-3"
+          }`}
+        >
+          {n}
+        </td>
+        <td className="whitespace-pre pl-4 pr-6 align-top">
+          {tokens ? <Tokens tokens={tokens} /> : text || " "}
+        </td>
+      </tr>
+      {notes && (
+        <tr>
+          <td className="border-r border-rule" />
+          <td className="py-1 pl-4 pr-6">
+            {notes.map((issue, j) => (
+              <Annotation key={j} issue={issue} />
+            ))}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -118,7 +155,7 @@ function Tokens({ tokens }: { tokens: ThemedToken[] }) {
 function Annotation({ issue }: { issue: ReviewIssue }) {
   return (
     <div
-      className={`my-1 max-w-3xl whitespace-normal rounded-[3px] border border-l-4 border-rule bg-sheet px-3 py-2 font-sans text-sm shadow-sm ${SEVERITY_BORDER[issue.severity]}`}
+      className={`my-1 max-w-[min(48rem,calc(100vw-5rem))] whitespace-normal rounded-[3px] border border-l-4 border-rule bg-sheet px-3 py-2 font-sans text-sm shadow-sm ${SEVERITY_BORDER[issue.severity]}`}
     >
       <p className="flex flex-wrap items-center gap-2">
         <SeverityBadge severity={issue.severity} />
