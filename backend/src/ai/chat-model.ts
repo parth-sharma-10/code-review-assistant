@@ -35,10 +35,21 @@ export class OpenAICompatibleChatModel implements ChatModel {
   constructor(private readonly cfg: OpenAICompatibleConfig) {}
 
   async complete(messages: ChatMessage[]): Promise<string> {
+    const res = await this.post(messages);
+    if (!res.ok) {
+      throw new AiProviderError(
+        `AI provider returned HTTP ${res.status}${await errorDetail(res)}`,
+        'http',
+      );
+    }
+    return stripReasoning(await firstChoiceContent(res));
+  }
+
+  /** Sends the request, turning network failures and timeouts into AiProviderErrors. */
+  private async post(messages: ChatMessage[]): Promise<Response> {
     const url = `${this.cfg.baseUrl.replace(/\/+$/, '')}/chat/completions`;
-    let res: Response;
     try {
-      res = await fetch(url, {
+      return await fetch(url, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -63,25 +74,21 @@ export class OpenAICompatibleChatModel implements ChatModel {
         'unreachable',
       );
     }
-
-    if (!res.ok) {
-      throw new AiProviderError(
-        `AI provider returned HTTP ${res.status}${await errorDetail(res)}`,
-        'http',
-      );
-    }
-    const body = (await res.json().catch(() => null)) as {
-      choices?: { message?: { content?: unknown } }[];
-    } | null;
-    const content = body?.choices?.[0]?.message?.content;
-    if (typeof content !== 'string' || content.trim().length === 0) {
-      throw new AiProviderError(
-        'AI provider returned an empty or malformed response',
-        'bad-response',
-      );
-    }
-    return stripReasoning(content);
   }
+}
+
+async function firstChoiceContent(res: Response): Promise<string> {
+  const body = (await res.json().catch(() => null)) as {
+    choices?: { message?: { content?: unknown } }[];
+  } | null;
+  const content = body?.choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || content.trim().length === 0) {
+    throw new AiProviderError(
+      'AI provider returned an empty or malformed response',
+      'bad-response',
+    );
+  }
+  return content;
 }
 
 /** Reasoning models served via LM Studio/Ollama (e.g. DeepSeek-R1, Qwen3) prepend <think> blocks. */

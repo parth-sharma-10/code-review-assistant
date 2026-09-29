@@ -170,15 +170,24 @@ export class ReviewsService {
     return review;
   }
 
-  private async selectFiles(projectId: string, dto: CreateReviewDto) {
-    if (dto.scope === ReviewScope.PROJECT) {
-      if (dto.fileIds?.length)
-        throw new BadRequestException('fileIds must be omitted for a PROJECT review');
-      const selected = await this.retrieval.forProjectReview(projectId, dto.type, BUDGETS.review);
-      if (selected.files.length === 0)
-        throw new BadRequestException('This project has no files to review');
-      return selected;
+  private selectFiles(projectId: string, dto: CreateReviewDto) {
+    return dto.scope === ReviewScope.PROJECT
+      ? this.selectProjectFiles(projectId, dto)
+      : this.selectChosenFiles(projectId, dto);
+  }
+
+  private async selectProjectFiles(projectId: string, dto: CreateReviewDto) {
+    if (dto.fileIds?.length) {
+      throw new BadRequestException('fileIds must be omitted for a PROJECT review');
     }
+    const selected = await this.retrieval.forProjectReview(projectId, dto.type, BUDGETS.review);
+    if (selected.files.length === 0) {
+      throw new BadRequestException('This project has no files to review');
+    }
+    return selected;
+  }
+
+  private async selectChosenFiles(projectId: string, dto: CreateReviewDto) {
     const ids = [...new Set(dto.fileIds ?? [])];
     if (dto.scope === ReviewScope.FILE && ids.length !== 1) {
       throw new BadRequestException('A FILE review needs exactly one fileId');

@@ -67,17 +67,7 @@ async function readEntries(zip: ZipFile): Promise<ExtractionResult> {
   for await (const entry of iterateEntries(zip)) {
     if (entry.fileName.endsWith('/')) continue; // directory entry
 
-    const filePath = safeEntryPath(entry.fileName);
-    if (filePath === null) {
-      throw new ZipRejectedError(
-        `Archive contains an unsafe path: ${entry.fileName.slice(0, 200)}`,
-      );
-    }
-    if (isSymlink(entry)) {
-      skipped.push({ path: filePath, reason: 'symlink' });
-      continue;
-    }
-    const reason = classify(filePath, entry.uncompressedSize);
+    const { path: filePath, reason } = screen(entry);
     if (reason) {
       skipped.push({ path: filePath, reason });
       continue;
@@ -94,22 +84,33 @@ async function readEntries(zip: ZipFile): Promise<ExtractionResult> {
     }
 
     const content = decodeText(await readEntry(zip, entry));
-    if (content === null) {
-      skipped.push({ path: filePath, reason: 'binary' });
-      continue;
-    }
-    const name = filePath.slice(filePath.lastIndexOf('/') + 1);
-    const extension = extensionOf(name);
-    byPath.set(filePath, {
-      path: filePath,
-      name,
-      extension,
-      mimeType: mimeTypeOf(extension),
-      size: Buffer.byteLength(content),
-      content,
-    });
+    if (content === null) skipped.push({ path: filePath, reason: 'binary' });
+    else byPath.set(filePath, toExtractedFile(filePath, content));
   }
   return { files: [...byPath.values()], skipped };
+}
+
+/** Decides from metadata alone (before inflating) whether an entry is kept. Throws if unsafe. */
+function screen(entry: Entry): { path: string; reason: SkipReason | null } {
+  const path = safeEntryPath(entry.fileName);
+  if (path === null) {
+    throw new ZipRejectedError(`Archive contains an unsafe path: ${entry.fileName.slice(0, 200)}`);
+  }
+  if (isSymlink(entry)) return { path, reason: 'symlink' };
+  return { path, reason: classify(path, entry.uncompressedSize) };
+}
+
+function toExtractedFile(path: string, content: string): ExtractedFile {
+  const name = path.slice(path.lastIndexOf('/') + 1);
+  const extension = extensionOf(name);
+  return {
+    path,
+    name,
+    extension,
+    mimeType: mimeTypeOf(extension),
+    size: Buffer.byteLength(content),
+    content,
+  };
 }
 
 /** GitHub "Download ZIP" wraps everything in `repo-main/`; returns that prefix if all files share it. */
