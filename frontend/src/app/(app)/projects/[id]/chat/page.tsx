@@ -1,13 +1,16 @@
 "use client";
 
+import { ArrowUp, FileCode2, MessagesSquare, Plus } from "lucide-react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
+import { FileIcon } from "@/components/icons";
 import { useProject } from "@/components/project-context";
 import { ProviderSelect } from "@/components/provider-select";
-import { Button, EmptyState, ErrorNote, Loading } from "@/components/ui";
+import { Button, buttonClass, EmptyState, ErrorNote, Page, Skeleton } from "@/components/ui";
 import { api } from "@/lib/api";
-import { formatDate } from "@/lib/format";
+import { formatShortDate } from "@/lib/format";
 import type { ChatMessage, ChatSession } from "@/lib/types";
 import { useApi } from "@/lib/use-api";
 
@@ -31,37 +34,48 @@ export default function ChatPage() {
 
   if (project._count.files === 0) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <EmptyState title="Nothing to chat about yet">
-          <Link
-            href={`/projects/${project.id}`}
-            className="font-medium text-ink underline underline-offset-2"
-          >
-            Upload source code
-          </Link>{" "}
-          first.
+      <Page>
+        <EmptyState
+          icon={MessagesSquare}
+          title="Nothing to chat about yet"
+          action={
+            <Link href={`/projects/${project.id}`} className={buttonClass("primary")}>
+              Upload source
+            </Link>
+          }
+        >
+          Chat answers from the uploaded files, so upload the repository first.
         </EmptyState>
-      </main>
+      </Page>
     );
   }
 
   return (
-    <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:h-full lg:grid-cols-[240px_minmax(0,1fr)]">
-      <aside className="border-b border-rule bg-sheet p-3 lg:overflow-y-auto lg:border-r lg:border-b-0">
+    <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[248px_minmax(0,1fr)]">
+      <aside className="border-b border-rule bg-rail p-3 lg:overflow-y-auto lg:border-r lg:border-b-0">
         <Button onClick={newChat} className="mb-3 w-full">
+          <Plus aria-hidden />
           New chat
         </Button>
-        {sessions.loading && <Loading />}
-        <ul className="space-y-0.5">
+        {sessions.loading && (
+          <div className="space-y-2 px-2" role="status" aria-label="Loading chats">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        )}
+        <ul className="space-y-px">
           {sessions.data?.map((s) => (
             <li key={s.id}>
               <button
+                type="button"
                 onClick={() => setActiveId(s.id)}
                 aria-current={s.id === sessionId ? "true" : undefined}
-                className="w-full rounded-[4px] px-2 py-1.5 text-left text-sm text-ink-2 hover:bg-wash aria-[current=true]:bg-wash aria-[current=true]:text-ink"
+                className="w-full rounded-control px-2.5 py-2 text-left text-sm text-ink-2 hover:bg-wash aria-[current=true]:bg-sheet aria-[current=true]:text-ink aria-[current=true]:shadow-panel"
               >
                 <span className="block truncate">{s.title}</span>
-                <span className="block text-xs text-ink-3">{formatDate(s.createdAt)}</span>
+                <span className="block font-mono text-[11px] text-ink-3">
+                  {formatShortDate(s.createdAt)}
+                </span>
               </button>
             </li>
           ))}
@@ -76,11 +90,16 @@ export default function ChatPage() {
         />
       ) : (
         <div className="flex items-center justify-center p-8">
-          <EmptyState title="Ask about this codebase">
-            Answers use the files that best match your question.{" "}
-            <button onClick={newChat} className="font-medium text-ink underline underline-offset-2">
-              Start a chat
-            </button>
+          <EmptyState
+            icon={MessagesSquare}
+            title="Ask about this codebase"
+            action={
+              <Button variant="primary" onClick={newChat}>
+                Start a chat
+              </Button>
+            }
+          >
+            Answers use the files that best match your question, and list them.
           </EmptyState>
         </div>
       )}
@@ -134,30 +153,30 @@ function Conversation({
 
   return (
     <section className="flex min-h-[60vh] min-w-0 flex-col" aria-label="Conversation">
-      <div className="flex-1 space-y-5 overflow-y-auto px-4 py-6" aria-live="polite">
-        {history.loading && <Loading label="Loading conversation" />}
-        {!history.loading && messages.length === 0 && !pending && <Examples onAsk={send} />}
-        {messages.map((m) => (
-          <Message key={m.id} message={m} projectId={projectId} />
-        ))}
-        {pending && (
-          <>
-            <Message
-              message={{
-                id: "pending",
-                role: "USER",
-                content: pending,
-                contextFiles: [],
-                createdAt: "",
-              }}
-              projectId={projectId}
-            />
-            <p className="mx-auto max-w-2xl text-sm text-ink-3" role="status">
-              Reading the relevant files…
-            </p>
-          </>
-        )}
-        <div ref={end} />
+      <div className="flex-1 overflow-y-auto px-4 py-8" aria-live="polite">
+        <div className="mx-auto max-w-2xl space-y-6">
+          {history.loading && <Skeleton className="h-16 w-full" />}
+          {!history.loading && messages.length === 0 && !pending && <Examples onAsk={send} />}
+          {messages.map((m) => (
+            <Message key={m.id} message={m} projectId={projectId} />
+          ))}
+          {pending && (
+            <>
+              <Message
+                message={{
+                  id: "pending",
+                  role: "USER",
+                  content: pending,
+                  contextFiles: [],
+                  createdAt: "",
+                }}
+                projectId={projectId}
+              />
+              <Thinking />
+            </>
+          )}
+          <div ref={end} />
+        </div>
       </div>
       <Composer
         draft={draft}
@@ -172,17 +191,56 @@ function Conversation({
   );
 }
 
+function Thinking() {
+  return (
+    <p role="status" className="flex items-center gap-2.5 text-sm text-ink-3">
+      <AssistantMark />
+      <span className="flex gap-1" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="size-1.5 animate-pulse rounded-full bg-ink-3"
+            style={{ animationDelay: `${i * 160}ms` }}
+          />
+        ))}
+      </span>
+      Reading the relevant files…
+    </p>
+  );
+}
+
+function AssistantMark() {
+  return (
+    <span
+      aria-hidden
+      className="flex size-6 shrink-0 items-center justify-center rounded-control bg-marker font-mono text-[11px] font-semibold text-ink"
+    >
+      m
+    </span>
+  );
+}
+
 function Examples({ onAsk }: { onAsk: (question: string) => void }) {
   return (
-    <div className="mx-auto max-w-2xl">
-      <p className="text-sm text-ink-2">
-        Ask a question about the uploaded code. Each answer is based on the files a keyword search
-        ranks as most relevant, listed under the answer.
+    <div className="pt-6 text-center">
+      <span className="mx-auto flex size-11 items-center justify-center rounded-panel border border-rule bg-sheet text-ink-2 shadow-panel">
+        <MessagesSquare aria-hidden strokeWidth={1.75} className="size-5" />
+      </span>
+      <h2 className="mt-4 text-lg font-semibold">Ask about this codebase</h2>
+      <p className="mx-auto mt-1 max-w-md text-sm text-ink-2">
+        Each answer is based on the files a keyword search ranks as most relevant, and lists them so
+        you can check.
       </p>
-      <ul className="mt-3 flex flex-wrap gap-2">
+      <ul className="mt-6 grid gap-2 text-left sm:grid-cols-3">
         {EXAMPLES.map((q) => (
           <li key={q}>
-            <Button onClick={() => onAsk(q)}>{q}</Button>
+            <button
+              type="button"
+              onClick={() => onAsk(q)}
+              className="h-full w-full rounded-panel border border-rule bg-sheet p-3 text-left text-sm text-ink-2 shadow-panel transition-[border-color,color] hover:border-ink-3/50 hover:text-ink"
+            >
+              {q}
+            </button>
           </li>
         ))}
       </ul>
@@ -220,27 +278,35 @@ function Composer({
         e.preventDefault();
         onSend();
       }}
-      className="border-t border-rule bg-sheet p-3"
+      className="px-4 pb-4"
     >
       <div className="mx-auto max-w-2xl space-y-2">
         <ErrorNote>{error}</ErrorNote>
-        <textarea
-          value={draft}
-          onChange={(e) => onDraftChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          rows={2}
-          maxLength={4000}
-          placeholder="Ask about the code. Enter to send, Shift+Enter for a new line."
-          aria-label="Question"
-          className="w-full resize-y rounded-[4px] border border-rule bg-sheet px-3 py-2 text-sm focus:border-ink focus:outline-none"
-        />
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
-            <ProviderSelect value={providerId} onChange={onProviderChange} />
+        <div className="rounded-panel border border-rule bg-sheet shadow-pop transition-[border-color] focus-within:border-ink-3">
+          <textarea
+            value={draft}
+            onChange={(e) => onDraftChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            rows={2}
+            maxLength={4000}
+            placeholder="Ask about the code…"
+            aria-label="Question"
+            className="block w-full resize-none bg-transparent px-3.5 pt-3 text-sm outline-none placeholder:text-ink-3"
+          />
+          <div className="flex items-center gap-2 px-2 pb-2">
+            <ProviderSelect value={providerId} onChange={onProviderChange} compact />
+            <span className="ml-auto hidden text-xs text-ink-3 sm:inline">
+              <kbd>↵</kbd> send · <kbd>⇧</kbd> <kbd>↵</kbd> new line
+            </span>
+            <button
+              type="submit"
+              disabled={busy || !draft.trim()}
+              aria-label="Send"
+              className="flex size-8 items-center justify-center rounded-control bg-ink text-sheet transition-opacity hover:bg-ink/85 disabled:opacity-30"
+            >
+              <ArrowUp aria-hidden className="size-4" />
+            </button>
           </div>
-          <Button type="submit" variant="primary" busy={busy} disabled={!draft.trim()}>
-            Send
-          </Button>
         </div>
       </div>
     </form>
@@ -250,33 +316,53 @@ function Composer({
 function Message({ message, projectId }: { message: ChatMessage; projectId: string }) {
   if (message.role === "USER") {
     return (
-      <div className="mx-auto max-w-2xl">
-        <p className="ml-auto w-fit max-w-[85%] whitespace-pre-wrap rounded-[4px] border border-rule bg-sheet px-3 py-2 text-sm text-ink">
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.16 }}
+        className="flex justify-end"
+      >
+        <p className="max-w-[85%] rounded-panel rounded-br-[3px] bg-ink px-3.5 py-2 text-sm whitespace-pre-wrap text-sheet">
           {message.content}
         </p>
-      </div>
+      </motion.div>
     );
   }
   return (
-    <div className="mx-auto max-w-2xl">
-      {/* react-markdown does not render raw HTML, so model output cannot inject markup. */}
-      <div className="prose-answer text-sm">
-        <ReactMarkdown>{message.content}</ReactMarkdown>
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="flex gap-3"
+    >
+      <AssistantMark />
+      <div className="min-w-0 flex-1">
+        {/* react-markdown does not render raw HTML, so model output cannot inject markup. */}
+        <div className="prose-answer text-sm">
+          <ReactMarkdown>{message.content}</ReactMarkdown>
+        </div>
+        {message.contextFiles.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-1.5 flex items-center gap-1.5 text-xs text-ink-3">
+              <FileCode2 aria-hidden className="size-3.5" />
+              Based on {message.contextFiles.length} files
+            </p>
+            <ul className="flex flex-wrap gap-1.5">
+              {message.contextFiles.map((p) => (
+                <li key={p}>
+                  <Link
+                    href={`/projects/${projectId}/code?file=${encodeURIComponent(p)}`}
+                    className="flex items-center gap-1.5 rounded-control border border-rule bg-sheet px-2 py-1 font-mono text-xs text-ink-2 shadow-panel hover:border-ink-3/50 hover:text-ink"
+                  >
+                    <FileIcon name={p} className="text-ink-3" />
+                    {p}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
-      {message.contextFiles.length > 0 && (
-        <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-rule pt-2 font-mono text-xs text-ink-3">
-          <span className="font-sans">Based on</span>
-          {message.contextFiles.map((p) => (
-            <Link
-              key={p}
-              href={`/projects/${projectId}/code?file=${encodeURIComponent(p)}`}
-              className="hover:text-ink hover:underline"
-            >
-              {p}
-            </Link>
-          ))}
-        </p>
-      )}
-    </div>
+    </motion.div>
   );
 }

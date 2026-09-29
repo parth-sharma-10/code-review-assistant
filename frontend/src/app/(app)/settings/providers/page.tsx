@@ -1,5 +1,20 @@
 "use client";
 
+import {
+  CircleAlert,
+  CircleCheck,
+  Cloud,
+  Cpu,
+  MoreHorizontal,
+  Pencil,
+  PlugZap,
+  Plus,
+  Star,
+  Trash2,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import { Dialog, DropdownMenu } from "radix-ui";
 import { useState, type FormEvent } from "react";
 import {
   Button,
@@ -7,8 +22,12 @@ import {
   EmptyState,
   ErrorNote,
   Field,
-  Loading,
+  ICON_BUTTON,
+  Page,
+  PageHeader,
+  SkeletonRows,
   TextInput,
+  useReturnFocus,
 } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { Provider, ProvidersResponse, ProviderType } from "@/lib/types";
@@ -56,6 +75,7 @@ export default function ProvidersPage() {
   const [editing, setEditing] = useState<Provider | "new" | null>(null);
   const [deleting, setDeleting] = useState<Provider | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const returnFocus = useReturnFocus();
 
   async function act(action: () => Promise<unknown>) {
     setActionError(null);
@@ -73,45 +93,37 @@ export default function ProvidersPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">AI providers</h1>
-          <p className="mt-1 max-w-prose text-sm text-ink-2">
-            Any server that implements the OpenAI chat-completions API works: OpenAI, LM Studio,
-            Ollama, OpenRouter, vLLM and others. API keys are encrypted at rest and never shown
-            again after saving.
-          </p>
-        </div>
-        {editing === null && (
+    <Page className="max-w-4xl">
+      <PageHeader
+        title="AI providers"
+        description="Any server that implements the OpenAI chat-completions API works: OpenAI, LM Studio, Ollama, OpenRouter, vLLM and others. API keys are encrypted at rest and never shown again."
+        actions={
           <Button variant="primary" onClick={() => setEditing("new")}>
+            <Plus aria-hidden />
             Add provider
           </Button>
-        )}
-      </div>
+        }
+      />
 
-      {editing && (
-        <ProviderForm
-          provider={editing === "new" ? null : editing}
-          onDone={() => {
-            setEditing(null);
-            reload();
-          }}
-          onCancel={() => setEditing(null)}
-        />
-      )}
-
-      {loading && <Loading label="Loading providers" />}
+      {loading && <SkeletonRows rows={2} label="Loading providers" />}
       <ErrorNote>{error ?? actionError}</ErrorNote>
-      {data && data.providers.length === 0 && editing === null && (
-        <EmptyState title="No providers yet">
+      {data && data.providers.length === 0 && (
+        <EmptyState
+          icon={PlugZap}
+          title="No providers yet"
+          action={
+            <Button variant="primary" onClick={() => setEditing("new")}>
+              Add provider
+            </Button>
+          }
+        >
           {data.environmentFallback
             ? `Reviews currently use the server default (${data.environmentFallback.model}). Add a provider to use your own.`
             : "Add one to run reviews and chat. For a free local setup, install Ollama and choose the Ollama preset."}
         </EmptyState>
       )}
       {data && data.providers.length > 0 && (
-        <ul className="divide-y divide-rule rounded-[4px] border border-rule bg-sheet">
+        <ul className="divide-y divide-rule overflow-hidden rounded-panel border border-rule bg-sheet shadow-panel">
           {data.providers.map((p) => (
             <ProviderRow
               key={p.id}
@@ -127,6 +139,29 @@ export default function ProvidersPage() {
           ))}
         </ul>
       )}
+
+      <Dialog.Root open={editing !== null} onOpenChange={(o) => !o && setEditing(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-40 animate-fade-in bg-ink/30" />
+          <Dialog.Content
+            {...returnFocus}
+            aria-describedby={undefined}
+            className="fixed top-1/2 left-1/2 z-50 max-h-[90dvh] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-pop-in overflow-y-auto rounded-panel border border-rule bg-sheet shadow-pop"
+          >
+            {editing && (
+              <ProviderForm
+                provider={editing === "new" ? null : editing}
+                onDone={() => {
+                  setEditing(null);
+                  reload();
+                }}
+                onCancel={() => setEditing(null)}
+              />
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
       <ConfirmDialog
         open={deleting !== null}
         title={`Delete ${deleting?.name}?`}
@@ -135,7 +170,7 @@ export default function ProvidersPage() {
         onConfirm={() => deleting && remove(deleting)}
         onCancel={() => setDeleting(null)}
       />
-    </main>
+    </Page>
   );
 }
 
@@ -165,42 +200,92 @@ function ProviderRow({
   }
 
   return (
-    <li className="space-y-2 px-4 py-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p>
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-panel border border-rule bg-paper text-ink-2">
+        {p.type === "OLLAMA" || p.type === "LM_STUDIO" ? (
+          <Cpu aria-hidden strokeWidth={1.75} className="size-4" />
+        ) : (
+          <Cloud aria-hidden strokeWidth={1.75} className="size-4" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2">
           <span className="font-medium">{p.name}</span>
           {p.isDefault && (
-            <span className="ml-2 rounded-[3px] border border-rule px-1.5 py-px font-mono text-[11px] text-ink-2">
+            <span className="rounded-full border border-rule bg-paper px-2 font-mono text-[11px] text-ink-2">
               default
             </span>
           )}
         </p>
-        <div className="flex flex-wrap gap-1">
-          <Button variant="ghost" onClick={test} busy={status === "testing"}>
-            Test connection
-          </Button>
-          {!p.isDefault && (
-            <Button variant="ghost" onClick={onMakeDefault}>
-              Make default
-            </Button>
-          )}
-          <Button variant="ghost" onClick={onEdit}>
-            Edit
-          </Button>
-          <Button variant="ghost" onClick={onDelete}>
-            Delete
-          </Button>
-        </div>
-      </div>
-      <p className="font-mono text-xs text-ink-3">
-        {PRESETS[p.type].label} · {p.model} · {p.baseUrl} · {p.hasApiKey ? "key saved" : "no key"}
-      </p>
-      {status && status !== "testing" && (
-        <p role="status" className={`text-sm ${status.ok ? "text-ok" : "text-critical"}`}>
-          {status.text}
+        <p className="truncate font-mono text-xs text-ink-3">
+          {p.model} · {p.baseUrl} · {p.hasApiKey ? "key saved" : "no key"}
         </p>
-      )}
+        {status && status !== "testing" && (
+          <p
+            role="status"
+            className={`mt-1 flex items-center gap-1.5 text-[13px] ${status.ok ? "text-ok" : "text-critical"}`}
+          >
+            {status.ok ? (
+              <CircleCheck aria-hidden className="size-3.5" />
+            ) : (
+              <CircleAlert aria-hidden className="size-3.5" />
+            )}
+            {status.text}
+          </p>
+        )}
+      </div>
+      <Button size="sm" onClick={test} busy={status === "testing"}>
+        {status !== "testing" && <Zap aria-hidden />}
+        Test
+      </Button>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger aria-label={`Actions for ${p.name}`} className={ICON_BUTTON}>
+          <MoreHorizontal aria-hidden className="size-4" />
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            align="end"
+            sideOffset={4}
+            className="z-50 min-w-40 animate-pop-in rounded-panel border border-rule bg-sheet p-1 shadow-pop"
+          >
+            {!p.isDefault && (
+              <MenuItem icon={Star} onSelect={onMakeDefault}>
+                Make default
+              </MenuItem>
+            )}
+            <MenuItem icon={Pencil} onSelect={onEdit}>
+              Edit
+            </MenuItem>
+            <DropdownMenu.Separator className="my-1 h-px bg-rule" />
+            <MenuItem icon={Trash2} onSelect={onDelete} danger>
+              Delete
+            </MenuItem>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
     </li>
+  );
+}
+
+function MenuItem({
+  icon: Icon,
+  onSelect,
+  danger,
+  children,
+}: {
+  icon: LucideIcon;
+  onSelect: () => void;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <DropdownMenu.Item
+      onSelect={onSelect}
+      className={`flex cursor-default items-center gap-2 rounded-control px-2 py-1.5 text-sm outline-none data-highlighted:bg-wash ${danger ? "text-critical" : "text-ink"}`}
+    >
+      <Icon aria-hidden className="size-4 opacity-70" />
+      {children}
+    </DropdownMenu.Item>
   );
 }
 
@@ -254,50 +339,54 @@ function ProviderForm({
     setForm({ ...form, [key]: e.target.value });
 
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-[4px] border border-rule bg-sheet p-4">
-      <h2 className="font-semibold">{provider ? `Edit ${provider.name}` : "Add provider"}</h2>
-      <PresetPicker value={type} onChange={choosePreset} />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Name">
-          <TextInput value={form.name} onChange={set("name")} required maxLength={100} />
-        </Field>
-        <Field
-          label="Model"
-          hint="Exactly as the server names it, e.g. gpt-4o-mini or qwen2.5-coder:7b."
-        >
+    <form onSubmit={submit}>
+      <div className="space-y-4 p-5">
+        <Dialog.Title className="text-base font-semibold">
+          {provider ? `Edit ${provider.name}` : "Add a provider"}
+        </Dialog.Title>
+        <PresetPicker value={type} onChange={choosePreset} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Name">
+            <TextInput value={form.name} onChange={set("name")} required maxLength={100} />
+          </Field>
+          <Field
+            label="Model"
+            hint="Exactly as the server names it, e.g. gpt-4o-mini or qwen2.5-coder:7b."
+          >
+            <TextInput
+              value={form.model}
+              onChange={set("model")}
+              required
+              maxLength={200}
+              className="font-mono"
+            />
+          </Field>
+        </div>
+        <Field label="Base URL" hint="The part before /chat/completions.">
           <TextInput
-            value={form.model}
-            onChange={set("model")}
+            value={form.baseUrl}
+            onChange={set("baseUrl")}
             required
-            maxLength={200}
+            type="url"
             className="font-mono"
           />
         </Field>
-      </div>
-      <Field label="Base URL" hint="The part before /chat/completions.">
-        <TextInput
-          value={form.baseUrl}
-          onChange={set("baseUrl")}
-          required
-          type="url"
-          className="font-mono"
+        <KeyField
+          value={form.apiKey}
+          onChange={set("apiKey")}
+          hasSavedKey={Boolean(provider?.hasApiKey)}
+          hint={PRESETS[type].keyHint}
+          clearKey={clearKey}
+          onClearKeyChange={setClearKey}
         />
-      </Field>
-      <KeyField
-        value={form.apiKey}
-        onChange={set("apiKey")}
-        hasSavedKey={Boolean(provider?.hasApiKey)}
-        hint={PRESETS[type].keyHint}
-        clearKey={clearKey}
-        onClearKeyChange={setClearKey}
-      />
-      <ErrorNote>{error}</ErrorNote>
-      <div className="flex gap-2">
+        <ErrorNote>{error}</ErrorNote>
+      </div>
+      <div className="flex justify-end gap-2 rounded-b-panel border-t border-rule bg-paper px-5 py-3">
+        <Button variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
         <Button type="submit" variant="primary" busy={busy}>
           {provider ? "Save changes" : "Add provider"}
-        </Button>
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
         </Button>
       </div>
     </form>
@@ -318,7 +407,7 @@ function PresetPicker({
         {(Object.keys(PRESETS) as ProviderType[]).map((t) => (
           <label
             key={t}
-            className={`cursor-pointer rounded-[4px] border px-2.5 py-1 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ink ${value === t ? "border-ink bg-wash" : "border-rule hover:bg-wash"}`}
+            className={`cursor-pointer rounded-control border px-2.5 py-1 text-[13px] transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ink ${value === t ? "border-ink bg-ink text-sheet" : "border-rule bg-sheet hover:bg-paper"}`}
           >
             <input
               type="radio"

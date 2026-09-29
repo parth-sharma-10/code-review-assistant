@@ -32,8 +32,12 @@ export function FindingToolbar({
 }) {
   const total = SEVERITIES.reduce((n, s) => n + counts[s], 0);
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule bg-paper py-2">
-      <div role="group" aria-label="Filter findings by severity" className="flex flex-wrap gap-1">
+    <div className="sticky top-0 z-10 -mx-1 flex flex-wrap items-center gap-x-4 gap-y-2 bg-paper/95 px-1 py-2">
+      <div
+        role="group"
+        aria-label="Filter findings by severity"
+        className="flex flex-wrap gap-0.5 rounded-control border border-rule bg-sheet p-0.5 shadow-panel"
+      >
         <FilterButton pressed={filter.active.size === 0} onClick={filter.clear}>
           All <Count n={total} />
         </FilterButton>
@@ -44,7 +48,7 @@ export function FindingToolbar({
             disabled={counts[s] === 0}
             onClick={() => filter.toggle(s)}
           >
-            <span aria-hidden className={`size-2 ${SEVERITY_STYLE[s].bg}`} />
+            <span aria-hidden className={`size-2 rounded-[2px] ${SEVERITY_STYLE[s].mark}`} />
             {SEVERITY_STYLE[s].label} <Count n={counts[s]} />
           </FilterButton>
         ))}
@@ -75,7 +79,7 @@ function FilterButton({
       aria-pressed={pressed}
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex h-7 items-center gap-1.5 rounded-[4px] border border-transparent px-2 text-sm text-ink-2 hover:bg-wash hover:text-ink disabled:pointer-events-none disabled:opacity-40 aria-pressed:border-rule aria-pressed:bg-sheet aria-pressed:font-medium aria-pressed:text-ink"
+      className="inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-[13px] text-ink-2 transition-colors hover:bg-paper hover:text-ink disabled:pointer-events-none disabled:opacity-40 aria-pressed:bg-wash aria-pressed:font-medium aria-pressed:text-ink"
     >
       {children}
     </button>

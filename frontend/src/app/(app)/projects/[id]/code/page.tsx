@@ -1,10 +1,12 @@
 "use client";
 
+import { FileSearch, ListFilter, Play, TextSearch } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { CodeViewer } from "@/components/code-viewer";
 import { FileTree } from "@/components/file-tree";
+import { FileIcon } from "@/components/icons";
 import { useProject } from "@/components/project-context";
 import { ReviewRunner } from "@/components/review-runner";
 import { CopyButton, EmptyState, ErrorNote, Loading, Padded, TextInput } from "@/components/ui";
@@ -76,7 +78,7 @@ function Explorer() {
 
   const activeMeta = all.data.find((f) => f.path === activePath) ?? null;
   return (
-    <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:h-full lg:grid-cols-[280px_minmax(0,1fr)_300px]">
+    <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[272px_minmax(0,1fr)_300px]">
       <TreePanel
         projectId={project.id}
         files={all.data}
@@ -95,9 +97,10 @@ function Explorer() {
       />
       <aside
         aria-labelledby="run-review"
-        className="border-t border-rule bg-paper p-4 lg:overflow-y-auto lg:border-t-0 lg:border-l"
+        className="border-t border-rule bg-rail p-4 lg:overflow-y-auto lg:border-t-0 lg:border-l"
       >
-        <h2 id="run-review" className="mb-4 text-[15px] font-semibold">
+        <h2 id="run-review" className="mb-4 flex items-center gap-2 text-[15px] font-semibold">
+          <Play aria-hidden strokeWidth={1.75} className="size-4" />
           Run a review
         </h2>
         <ReviewRunner
@@ -142,25 +145,39 @@ function TreePanel({
 
   return (
     <aside className="flex max-h-80 flex-col border-b border-rule bg-sheet lg:max-h-none lg:border-r lg:border-b-0">
-      <div className="space-y-2 border-b border-rule p-2">
-        <TextInput
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter by file name"
-          aria-label="Filter files by name"
-        />
+      <div className="space-y-2 border-b border-rule p-2.5">
+        <div className="relative">
+          <ListFilter
+            aria-hidden
+            className="pointer-events-none absolute top-2 left-2.5 size-4 text-ink-3"
+          />
+          <TextInput
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter by file name"
+            aria-label="Filter files by name"
+            className="pl-8"
+          />
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             setContentQuery(String(new FormData(e.currentTarget).get("q") ?? "").trim());
           }}
         >
-          <TextInput
-            name="q"
-            placeholder="Search file contents ↵"
-            aria-label="Search file contents"
-            maxLength={200}
-          />
+          <div className="relative">
+            <TextSearch
+              aria-hidden
+              className="pointer-events-none absolute top-2 left-2.5 size-4 text-ink-3"
+            />
+            <TextInput
+              name="q"
+              placeholder="Search contents, press Enter"
+              aria-label="Search file contents"
+              maxLength={200}
+              className="pl-8"
+            />
+          </div>
         </form>
         {contentQuery && (
           <p className="flex justify-between text-xs text-ink-3">
@@ -236,12 +253,20 @@ function ListingPanel({
         </div>
       )}
       {!activeMeta ? (
-        <div className="flex flex-1 items-center justify-center p-8 text-sm text-ink-3">
-          {activePath ? `${activePath} is not in this upload.` : "Select a file to view it."}
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+          <span className="flex size-12 items-center justify-center rounded-panel border border-rule bg-paper text-ink-3">
+            <FileSearch aria-hidden strokeWidth={1.5} className="size-6" />
+          </span>
+          <p className="text-sm text-ink-2">
+            {activePath
+              ? `${activePath} is not in this upload.`
+              : "Open a file from the tree to read it here."}
+          </p>
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 border-b border-rule px-4 py-1.5">
+          <div className="flex h-11 shrink-0 items-center gap-2 border-b border-rule bg-paper px-4">
+            <FileIcon name={activeMeta.name} className="text-ink-2" />
             <h2 className="min-w-0 truncate font-mono text-[13px] font-semibold">
               {activeMeta.path}
             </h2>

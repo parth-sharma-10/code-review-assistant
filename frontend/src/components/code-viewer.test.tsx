@@ -1,7 +1,11 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ReviewIssue } from "@/lib/types";
 import { CodeViewer } from "./code-viewer";
+import { TooltipProvider } from "./ui";
+
+// The app mounts TooltipProvider at the root (components/providers.tsx); tests need it too.
+const render = (ui: React.ReactElement) => rtlRender(ui, { wrapper: TooltipProvider });
 
 // Highlighting is async and irrelevant here; plain-text rendering is the fallback path anyway.
 vi.mock("@/lib/highlight", () => ({

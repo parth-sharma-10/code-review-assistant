@@ -1,9 +1,11 @@
 "use client";
 
+import { ChevronRight, Folder, FolderOpen } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatBytes } from "@/lib/format";
 import { ancestorsOf, buildTree, type TreeNode } from "@/lib/tree";
 import type { FileMeta } from "@/lib/types";
+import { FileIcon } from "./icons";
 
 interface Props {
   files: FileMeta[];
@@ -41,12 +43,22 @@ export function FileTree({ files, activePath, selected, onOpen, onToggleSelect }
             <button
               onClick={() => toggle(node.path)}
               style={indent}
-              className="flex w-full items-center gap-1.5 py-[3px] pr-2 text-left text-ink-2 hover:bg-wash"
+              className="flex h-7 w-full items-center gap-1.5 pr-2 text-left text-ink-2 hover:bg-wash hover:text-ink"
             >
-              <span aria-hidden className="w-3 text-ink-3">
-                {open ? "▾" : "▸"}
-              </span>
-              <span className="truncate">{node.name}/</span>
+              <ChevronRight
+                aria-hidden
+                className={`size-3.5 shrink-0 text-ink-3 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
+              />
+              {open ? (
+                <FolderOpen
+                  aria-hidden
+                  strokeWidth={1.75}
+                  className="size-3.5 shrink-0 text-ink-3"
+                />
+              ) : (
+                <Folder aria-hidden strokeWidth={1.75} className="size-3.5 shrink-0 text-ink-3" />
+              )}
+              <span className="truncate">{node.name}</span>
             </button>
             {open && <ul role="group">{render(node.children, depth + 1)}</ul>}
           </li>
@@ -59,17 +71,24 @@ export function FileTree({ files, activePath, selected, onOpen, onToggleSelect }
           key={node.path}
           role="treeitem"
           aria-selected={active}
-          className={`group flex items-center ${active ? "bg-marker/60" : "hover:bg-wash"}`}
+          className={`group relative flex items-center ${active ? "bg-marker/60" : "hover:bg-wash"}`}
         >
           <button
             onClick={() => onOpen(file)}
             style={indent}
             title={`${file.path} · ${formatBytes(file.size)}`}
-            className={`flex min-w-0 flex-1 items-center gap-1.5 py-[3px] pr-1 text-left text-ink ${
+            className={`flex h-7 min-w-0 flex-1 items-center gap-1.5 pr-1 text-left text-ink ${
               active ? "font-medium" : ""
             }`}
           >
-            <span aria-hidden className="w-3" />
+            {active && (
+              <span
+                aria-hidden
+                className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-marker-edge"
+              />
+            )}
+            <span aria-hidden className="w-3.5 shrink-0" />
+            <FileIcon name={node.name} className={active ? "text-ink" : "text-ink-3"} />
             <span className="truncate">{node.name}</span>
           </button>
           <input

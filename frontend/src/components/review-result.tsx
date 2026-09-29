@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
@@ -19,7 +21,9 @@ import { CodeViewer } from "./code-viewer";
 import { DiffListing } from "./diff-listing";
 import { FindingNote, InlineCode, type Note } from "./finding-note";
 import { FindingToolbar, useFindingKeys, useSeverityFilter } from "./finding-nav";
-import { CopyButton } from "./ui";
+import { FileIcon } from "./icons";
+import { SEVERITY_STYLE } from "./severity";
+import { CopyButton, ICON_BUTTON, Panel, Tooltip } from "./ui";
 
 export function ReviewResultView({ review }: { review: ReviewDetail }) {
   if (review.type === "DIFF")
@@ -118,55 +122,98 @@ function FileFindings({
   source?: FileDetail;
   loading: boolean;
 }) {
+  const [open, setOpen] = useState(true);
   const notes = group.findings.map((f) => ({ ...f, href: codeLink(review, f) }));
   const replaced = source && source.createdAt > review.createdAt;
+  const bodyId = `file-${group.findings[0].id}`;
   return (
-    <section
-      aria-label={group.file}
-      className="overflow-hidden rounded-[4px] border border-rule bg-sheet"
-    >
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-rule px-3 py-2">
-        <h2 className="min-w-0 truncate font-mono text-[13px] font-semibold text-ink">
-          {group.file}
-        </h2>
+    <Panel as="section" aria-label={group.file} className="overflow-hidden">
+      <header className="flex items-center gap-2 border-b border-rule bg-paper py-1.5 pr-2 pl-2">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls={bodyId}
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-control px-1.5 py-1 text-left hover:bg-wash"
+        >
+          <ChevronRight
+            aria-hidden
+            className={`size-4 shrink-0 text-ink-3 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
+          />
+          <FileIcon name={group.file} className="text-ink-2" />
+          <h2 className="min-w-0 truncate font-mono text-[13px] font-semibold text-ink">
+            {group.file}
+          </h2>
+          <span className="shrink-0 flex gap-1">
+            {group.findings.map((f) => (
+              <span
+                key={f.id}
+                aria-hidden
+                className={`size-2 rounded-[2px] ${SEVERITY_STYLE[f.severity].mark}`}
+              />
+            ))}
+          </span>
+          <span className="shrink-0 text-xs text-ink-3">
+            {plural(group.findings.length, "finding")}
+          </span>
+        </button>
         <CopyButton text={group.file} label={`Copy path ${group.file}`} />
-        <span className="text-xs text-ink-3">{plural(group.findings.length, "finding")}</span>
         {source && (
-          <Link
-            href={`/projects/${review.project.id}/code?${new URLSearchParams({ file: group.file, review: review.id })}`}
-            className="ml-auto text-xs text-ink-2 underline-offset-2 hover:text-ink hover:underline"
-          >
-            Open whole file
-          </Link>
+          <Tooltip label="Open the whole file in the explorer">
+            <Link
+              href={`/projects/${review.project.id}/code?${new URLSearchParams({ file: group.file, review: review.id })}`}
+              aria-label={`Open ${group.file} in the explorer`}
+              className={ICON_BUTTON}
+            >
+              <ArrowUpRight aria-hidden strokeWidth={1.75} className="size-4" />
+            </Link>
+          </Tooltip>
         )}
       </header>
-      {replaced && (
-        <p className="border-b border-rule bg-medium-tint px-3 py-1.5 text-xs text-medium">
-          The source was replaced after this review, so the cited lines may have moved.
-        </p>
-      )}
-      <div className="@container overflow-x-auto">
-        {source ? (
-          <CodeViewer path={source.path} content={source.content} annotations={notes} context={3} />
-        ) : (
-          <>
-            <p className="px-3 py-1.5 text-xs text-ink-3">
-              {loading ? "Loading source…" : "This file is not in the current upload."}
-            </p>
-            {notes.map((n) => (
-              <FindingNote key={n.id} issue={n} />
-            ))}
-          </>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            id={bodyId}
+            initial={{ height: 0 }}
+            animate={{ height: "auto" }}
+            exit={{ height: 0 }}
+            transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            {replaced && (
+              <p className="border-b border-rule bg-medium-tint px-4 py-1.5 text-xs text-medium">
+                The source was replaced after this review, so the cited lines may have moved.
+              </p>
+            )}
+            <div className="@container overflow-x-auto">
+              {source ? (
+                <CodeViewer
+                  path={source.path}
+                  content={source.content}
+                  annotations={notes}
+                  context={3}
+                />
+              ) : (
+                <>
+                  <p className="px-4 py-2 text-xs text-ink-3">
+                    {loading ? "Loading source…" : "This file is not in the current upload."}
+                  </p>
+                  {notes.map((n) => (
+                    <FindingNote key={n.id} issue={n} />
+                  ))}
+                </>
+              )}
+            </div>
+          </motion.div>
         )}
-      </div>
-    </section>
+      </AnimatePresence>
+    </Panel>
   );
 }
 
 function Coverage({ meta, projectId }: { meta: CodeReviewResult["meta"]; projectId: string }) {
   return (
-    <Section title="Coverage">
-      <p className="text-sm text-ink-2">Reviewed {plural(meta.reviewedFiles.length, "file")}</p>
+    <Section title="Coverage" count={meta.reviewedFiles.length} note="files sent to the model">
       <FileList paths={meta.reviewedFiles} projectId={projectId} />
       {meta.omittedFiles.length > 0 && (
         <details className="mt-3 text-sm">
@@ -234,7 +281,7 @@ function DiffResult({ review, result }: { review: ReviewDetail; result: DiffRevi
       )}
       <section aria-label="Changes and findings">
         {notes.length > 0 && <FindingToolbar counts={countBySeverity(notes)} filter={filter} />}
-        <div className="mt-4 overflow-hidden rounded-[4px] border border-rule bg-sheet">
+        <div className="mt-4 overflow-hidden rounded-panel border border-rule bg-sheet shadow-panel">
           <DiffSource
             projectId={review.project.id}
             basePath={basePath}
@@ -306,7 +353,7 @@ function ArchitectureView({
         <Prose text={result.overview} />
       </Section>
       <Section title="Components">
-        <dl className="divide-y divide-rule border-y border-rule">
+        <dl className="divide-y divide-rule overflow-hidden rounded-panel border border-rule bg-sheet px-4 shadow-panel">
           {result.components.map((c, i) => (
             <div key={i} className="grid gap-x-6 gap-y-0.5 py-2.5 sm:grid-cols-[16rem_1fr]">
               <dt className="min-w-0">
@@ -334,7 +381,7 @@ function ArchitectureView({
         </dl>
       </Section>
       <Section title="Concerns" count={result.concerns.length}>
-        <div className="overflow-hidden rounded-[4px] border border-rule">
+        <div className="overflow-hidden rounded-panel border border-rule shadow-panel">
           {bySeverity(result.concerns).map((c, i) => (
             <FindingNote key={i} issue={{ ...c, line: null }} />
           ))}
@@ -356,10 +403,15 @@ function Recommendations({ items }: { items: string[] }) {
   if (items.length === 0) return null;
   return (
     <Section title="Recommendations" note="Suggestions, not confirmed problems">
-      <ul className="max-w-[80ch] space-y-1.5 text-sm leading-relaxed">
+      <ul className="space-y-2.5 rounded-panel border border-rule bg-sheet p-5 text-sm leading-relaxed shadow-panel">
         {items.map((r, i) => (
-          <li key={i} className="flex gap-3">
-            <span aria-hidden className="mt-[0.6em] h-px w-3 shrink-0 bg-ink-3" />
+          <li key={i} className="flex max-w-[80ch] gap-3">
+            <span
+              aria-hidden
+              className="mt-px flex size-5 shrink-0 items-center justify-center rounded-full bg-wash font-mono text-[11px] text-ink-2"
+            >
+              {i + 1}
+            </span>
             <span>
               <InlineCode text={r} />
             </span>
@@ -372,13 +424,14 @@ function Recommendations({ items }: { items: string[] }) {
 
 function FileList({ paths, projectId }: { paths: string[]; projectId: string }) {
   return (
-    <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-xs">
+    <ul className="mt-1.5 flex flex-wrap gap-1.5 font-mono text-xs">
       {paths.map((p) => (
         <li key={p}>
           <Link
             href={`/projects/${projectId}/code?file=${encodeURIComponent(p)}`}
-            className="text-ink-2 hover:text-ink hover:underline"
+            className="flex items-center gap-1.5 rounded-control border border-rule bg-sheet px-2 py-1 text-ink-2 shadow-panel hover:border-ink-3/50 hover:text-ink"
           >
+            <FileIcon name={p} className="text-ink-3" />
             {p}
           </Link>
         </li>

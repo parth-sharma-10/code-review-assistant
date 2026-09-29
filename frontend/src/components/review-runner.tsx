@@ -155,7 +155,7 @@ function Segmented<T extends string>({
   return (
     <fieldset>
       <legend className="mb-1.5 text-sm font-medium">{legend}</legend>
-      <div className="grid grid-cols-3 rounded-[4px] border border-rule bg-sheet p-0.5">
+      <div className="grid grid-cols-3 rounded-control border border-rule bg-sheet p-0.5">
         {options.map((o) => (
           <label
             key={o.value}
@@ -205,7 +205,7 @@ function RadioList<T extends string>({
       {options.map((o) => (
         <label
           key={o.value}
-          className={`-mx-2 flex gap-2 rounded-[4px] px-2 py-1 ${o.disabled ? "opacity-50" : "cursor-pointer hover:bg-wash"}`}
+          className={`-mx-2 flex gap-2 rounded-control px-2 py-1 ${o.disabled ? "opacity-50" : "cursor-pointer hover:bg-wash"}`}
         >
           <input
             type="radio"

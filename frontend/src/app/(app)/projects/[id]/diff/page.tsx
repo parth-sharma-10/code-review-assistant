@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useProject } from "@/components/project-context";
 import { ProviderSelect } from "@/components/provider-select";
-import { Button, EmptyState, ErrorNote, Loading, Padded } from "@/components/ui";
+import { GitCompareArrows } from "lucide-react";
+import { Button, EmptyState, ErrorNote, Loading, Padded, Page, SelectInput } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { FileMeta, ReviewDetail } from "@/lib/types";
 import { useApi } from "@/lib/use-api";
@@ -59,24 +60,27 @@ export default function DiffReviewPage() {
     );
   if (!files.data || files.data.length === 0) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <EmptyState title="Upload source code to compare versions" />
-      </main>
+      <Page>
+        <EmptyState icon={GitCompareArrows} title="Upload source code to compare versions" />
+      </Page>
     );
   }
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 px-4 pt-6 pb-16">
+    <Page className="space-y-6">
       <div>
-        <h2 className="text-[22px] font-semibold tracking-tight">Diff review</h2>
+        <h2 className="flex items-center gap-2.5 text-[22px] font-semibold tracking-tight">
+          <GitCompareArrows aria-hidden strokeWidth={1.75} className="size-6 text-ink-2" />
+          Diff review
+        </h2>
         <p className="mt-1 max-w-prose text-sm text-ink-2">
           Compare two versions of a file. Only the changed lines, with a little surrounding context,
           are sent to the model, which reports bugs, security and performance concerns and risky
           changes.
         </p>
       </div>
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-2">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2 rounded-panel border border-rule bg-sheet p-4 shadow-panel">
           <p className="text-sm font-medium">
             <span className="font-mono text-critical">−</span> Original
           </p>
@@ -106,7 +110,7 @@ export default function DiffReviewPage() {
       <Button variant="primary" onClick={run} busy={busy} disabled={!ready}>
         {busy ? "Reviewing changes…" : "Review changes"}
       </Button>
-    </main>
+    </Page>
   );
 }
 
@@ -139,11 +143,11 @@ function ChangedVersion({
   }
 
   return (
-    <fieldset className="space-y-2">
-      <legend className="text-sm font-medium">
+    <fieldset className="min-w-0 space-y-2 rounded-panel border border-rule bg-sheet p-4 shadow-panel">
+      <legend className="float-left mb-2 w-full text-sm font-medium">
         <span className="font-mono text-ok">+</span> Changed
       </legend>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <div className="clear-both flex flex-wrap gap-x-4 gap-y-1 text-sm">
         {(
           [
             ["file", "Another project file"],
@@ -183,7 +187,7 @@ function ChangedVersion({
             spellCheck={false}
             aria-label="Changed version"
             placeholder="Paste or edit the changed version here."
-            className="w-full rounded-[4px] border border-rule bg-sheet p-3 font-mono text-[12.5px] focus:border-ink focus:outline-none"
+            className="w-full rounded-control border border-rule bg-paper p-3 font-mono text-[12.5px] focus:border-ink-3 focus:outline-none"
           />
         </div>
       )}
@@ -203,11 +207,11 @@ function FileSelect({
   label: string;
 }) {
   return (
-    <select
+    <SelectInput
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={label}
-      className="w-full rounded-[4px] border border-rule bg-sheet px-2 py-1.5 font-mono text-sm focus:border-ink focus:outline-none"
+      className="font-mono text-[13px]"
     >
       <option value="">Choose a file…</option>
       {files.map((f) => (
@@ -215,6 +219,6 @@ function FileSelect({
           {f.path}
         </option>
       ))}
-    </select>
+    </SelectInput>
   );
 }
