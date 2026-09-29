@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ProjectsModule } from './projects/projects.module';
+import { FilesModule } from './files/files.module';
 import { DEFAULT_RATE_LIMIT } from './common/rate-limits';
 import { UserThrottlerGuard } from './common/user-throttler.guard';
 import { PrismaModule } from './prisma/prisma.module';
@@ -14,6 +15,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     AuthModule,
     ProjectsModule,
+    FilesModule,
   ],
   providers: [
     // Order matters: authentication runs first so the throttler can key limits by user.
