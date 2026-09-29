@@ -24,7 +24,7 @@ const TYPES: RadioOption<ReviewMode>[] = [
   },
   {
     value: "QUALITY",
-    label: "Code quality",
+    label: "Quality",
     detail: "Naming, structure, duplication, error handling",
   },
 ];
@@ -108,7 +108,7 @@ export function ReviewRunner({
 
   return (
     <div className="space-y-4">
-      <RadioList legend="Review type" name="type" options={TYPES} value={type} onChange={setType} />
+      <Segmented legend="Review type" name="type" options={TYPES} value={type} onChange={setType} />
       <div className="space-y-1.5">
         <RadioList
           legend="Scope"
@@ -137,6 +137,46 @@ export function ReviewRunner({
   );
 }
 
+/** Native radios styled as one segmented row: arrow keys move between options for free. */
+function Segmented<T extends string>({
+  legend,
+  name,
+  options,
+  value,
+  onChange,
+}: {
+  legend: string;
+  name: string;
+  options: RadioOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  const selected = options.find((o) => o.value === value);
+  return (
+    <fieldset>
+      <legend className="mb-1.5 text-sm font-medium">{legend}</legend>
+      <div className="grid grid-cols-3 rounded-[4px] border border-rule bg-sheet p-0.5">
+        {options.map((o) => (
+          <label
+            key={o.value}
+            className="cursor-pointer rounded-[3px] px-1 py-1 text-center text-sm text-ink-2 hover:text-ink has-checked:bg-wash has-checked:font-medium has-checked:text-ink has-checked:shadow-[inset_0_0_0_1px_var(--color-ink-3)] has-focus-visible:outline-2 has-focus-visible:outline-offset-1 has-focus-visible:outline-ink"
+          >
+            <input
+              type="radio"
+              name={name}
+              checked={value === o.value}
+              onChange={() => onChange(o.value)}
+              className="sr-only"
+            />
+            {o.label}
+          </label>
+        ))}
+      </div>
+      {selected && <p className="mt-1.5 text-xs text-ink-3">{selected.detail}</p>}
+    </fieldset>
+  );
+}
+
 interface RadioOption<T extends string> {
   value: T;
   label: string;
@@ -161,11 +201,11 @@ function RadioList<T extends string>({
 }) {
   return (
     <fieldset className="space-y-1.5">
-      <legend className="mb-1 text-sm font-medium">{legend}</legend>
+      <legend className="mb-1.5 text-sm font-medium">{legend}</legend>
       {options.map((o) => (
         <label
           key={o.value}
-          className={`flex gap-2 rounded-[4px] px-2 py-1 ${o.disabled ? "opacity-50" : "cursor-pointer hover:bg-wash"}`}
+          className={`-mx-2 flex gap-2 rounded-[4px] px-2 py-1 ${o.disabled ? "opacity-50" : "cursor-pointer hover:bg-wash"}`}
         >
           <input
             type="radio"

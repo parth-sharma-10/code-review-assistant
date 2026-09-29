@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { scopeLabel } from "@/components/review-list";
 import { ReviewResultView } from "@/components/review-result";
-import { SeverityCounts } from "@/components/severity";
 import { ErrorNote, Loading } from "@/components/ui";
 import { formatDate, REVIEW_TYPE_LABEL } from "@/lib/format";
 import type { ReviewDetail } from "@/lib/types";
@@ -14,29 +14,35 @@ export default function ReviewDetailPage() {
   const { data: review, error, loading } = useApi<ReviewDetail>(`/reviews/${reviewId}`);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
-      <Link href={`/projects/${id}/reviews`} className="text-sm text-ink-2 hover:text-ink">
-        ← All reviews
+    <main className="mx-auto max-w-6xl px-4 pt-5 pb-16">
+      <Link
+        href={`/projects/${id}/reviews`}
+        className="text-sm text-ink-2 hover:text-ink hover:underline"
+      >
+        <span aria-hidden>← </span>All reviews
       </Link>
       {loading && <Loading label="Loading review" />}
       <div className="mt-4">
         <ErrorNote>{error}</ErrorNote>
       </div>
       {review && (
-        <article className="mt-2 space-y-8">
-          <header className="space-y-4 border-b border-rule pb-6">
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight">
-                {REVIEW_TYPE_LABEL[review.type]}
-              </h1>
-              <p className="mt-1 font-mono text-xs text-ink-3">
-                {formatDate(review.createdAt)} · {review.providerName} · {review.model}
-              </p>
-            </div>
+        <article className="mt-1">
+          <header className="mb-8 max-w-[80ch]">
+            <h1 className="text-[22px] font-semibold tracking-tight">
+              {REVIEW_TYPE_LABEL[review.type]}
+            </h1>
+            <p className="mt-1 flex flex-wrap gap-x-2 font-mono text-xs text-ink-3">
+              <span>{scopeLabel(review)}</span>
+              <span aria-hidden>·</span>
+              <time dateTime={review.createdAt}>{formatDate(review.createdAt)}</time>
+              <span aria-hidden>·</span>
+              <span>
+                {review.providerName} / {review.model}
+              </span>
+            </p>
             {review.type !== "ARCHITECTURE" && (
-              <p className="max-w-prose leading-relaxed">{review.summary}</p>
+              <p className="mt-4 text-[15px] leading-relaxed">{review.summary}</p>
             )}
-            <SeverityCounts counts={review} size="lg" />
           </header>
           <ReviewResultView review={review} />
         </article>

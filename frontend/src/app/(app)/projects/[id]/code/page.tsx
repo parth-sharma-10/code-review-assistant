@@ -7,8 +7,8 @@ import { CodeViewer } from "@/components/code-viewer";
 import { FileTree } from "@/components/file-tree";
 import { useProject } from "@/components/project-context";
 import { ReviewRunner } from "@/components/review-runner";
-import { EmptyState, ErrorNote, Loading, Padded, TextInput } from "@/components/ui";
-import { formatBytes, REVIEW_TYPE_LABEL } from "@/lib/format";
+import { CopyButton, EmptyState, ErrorNote, Loading, Padded, TextInput } from "@/components/ui";
+import { formatBytes, plural, REVIEW_TYPE_LABEL } from "@/lib/format";
 import type { CodeReviewResult, FileDetail, FileMeta, ReviewDetail } from "@/lib/types";
 import { useApi } from "@/lib/use-api";
 
@@ -63,7 +63,7 @@ function Explorer() {
     );
   if (!all.data || all.data.length === 0) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <EmptyState title="No source code yet">
           <Link href={`/projects/${project.id}`} className="font-medium text-ink underline">
             Upload a ZIP
@@ -93,8 +93,13 @@ function Explorer() {
         reviewId={params.get("review")}
         onHideFindings={() => updateUrl({}, ["review", "line"])}
       />
-      <aside className="border-t border-rule bg-paper p-4 lg:overflow-y-auto lg:border-t-0 lg:border-l">
-        <h2 className="mb-3 text-base font-semibold">Run a review</h2>
+      <aside
+        aria-labelledby="run-review"
+        className="border-t border-rule bg-paper p-4 lg:overflow-y-auto lg:border-t-0 lg:border-l"
+      >
+        <h2 id="run-review" className="mb-4 text-[15px] font-semibold">
+          Run a review
+        </h2>
         <ReviewRunner
           projectId={project.id}
           activeFile={activeMeta}
@@ -217,7 +222,7 @@ function ListingPanel({
       {review.data && (
         <div className="flex items-center justify-between gap-2 border-b border-marker-edge/50 bg-marker/40 px-4 py-1.5 text-xs">
           <span>
-            Showing findings from{" "}
+            Findings from{" "}
             <Link
               href={`/projects/${projectId}/reviews/${review.data.id}`}
               className="font-medium underline underline-offset-2"
@@ -236,13 +241,17 @@ function ListingPanel({
         </div>
       ) : (
         <>
-          <div className="flex items-baseline justify-between gap-4 border-b border-rule px-4 py-2">
-            <h2 className="truncate font-mono text-sm">{activeMeta.path}</h2>
-            <span className="shrink-0 font-mono text-xs text-ink-3">
+          <div className="flex items-center gap-2 border-b border-rule px-4 py-1.5">
+            <h2 className="min-w-0 truncate font-mono text-[13px] font-semibold">
+              {activeMeta.path}
+            </h2>
+            <CopyButton text={activeMeta.path} label={`Copy path ${activeMeta.path}`} />
+            <span className="ml-auto shrink-0 font-mono text-xs text-ink-3">
+              {annotations.length > 0 && `${plural(annotations.length, "finding")} · `}
               {formatBytes(activeMeta.size)}
             </span>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="@container flex-1 overflow-auto">
             {file.loading && <Loading label="Loading file" />}
             <ErrorNote>{file.error}</ErrorNote>
             {file.data?.path === activePath && file.data && (

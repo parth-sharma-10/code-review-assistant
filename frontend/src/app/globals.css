@@ -12,7 +12,8 @@
   --color-sheet: #ffffff; /* panels, code listing */
   --color-ink: #151b2b; /* text, primary buttons */
   --color-ink-2: #4a5468; /* secondary text (7.2:1 on paper) */
-  --color-ink-3: #646d7f; /* tertiary text: captions, gutter numbers (≥4.5:1 on paper, sheet and wash) */
+  /* Tertiary text, gutter numbers, comments: >= 4.7:1 on paper, sheet, wash, diff tints, marker. */
+  --color-ink-3: #606979;
   --color-rule: #dde1e8; /* borders and dividers */
   --color-wash: #eef0f4; /* hover, selected tree rows, inputs */
   --color-marker: #ffe58f; /* highlighter: the line under review */
@@ -28,6 +29,11 @@
   --color-low: #3d5a80;
   --color-low-tint: #e8eef6;
   --color-ok: #1f6f43;
+
+  /* Diff lines: tints only, text stays ink. Removed lines reuse the critical tint. */
+  --color-add-tint: #e7f3ec;
+  --color-add-edge: #9ccbb0;
+  --color-del-edge: #e4a9ad;
 
   --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
@@ -56,6 +62,7 @@
 
 html {
   font-size: 14px; /* developer-tool density; rem-based spacing scales from here */
+  scroll-padding-top: 3.5rem; /* keyboard-focused findings clear the sticky filter bar */
 }
 
 body {
@@ -82,6 +89,21 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  min-width: 1.5em;
+  padding: 0 0.35em;
+  border: 1px solid var(--color-rule);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--color-sheet);
+  color: var(--color-ink-2);
+  text-align: center;
+  display: inline-block;
+  line-height: 1.5;
 }
 
 dialog::backdrop {

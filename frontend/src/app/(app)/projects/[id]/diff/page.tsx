@@ -59,37 +59,46 @@ export default function DiffReviewPage() {
     );
   if (!files.data || files.data.length === 0) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-8">
         <EmptyState title="Upload source code to compare versions" />
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+    <main className="mx-auto max-w-6xl space-y-6 px-4 pt-6 pb-16">
       <div>
-        <h2 className="text-base font-semibold">Diff review</h2>
+        <h2 className="text-[22px] font-semibold tracking-tight">Diff review</h2>
         <p className="mt-1 max-w-prose text-sm text-ink-2">
           Compare two versions of a file. Only the changed lines, with a little surrounding context,
           are sent to the model, which reports bugs, security and performance concerns and risky
           changes.
         </p>
       </div>
-      <div className="space-y-2">
-        <p className="text-sm font-medium">Version A: original</p>
-        <FileSelect files={files.data} value={baseId} onChange={setBaseId} label="Original file" />
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-2">
+          <p className="text-sm font-medium">
+            <span className="font-mono text-critical">−</span> Original
+          </p>
+          <FileSelect
+            files={files.data}
+            value={baseId}
+            onChange={setBaseId}
+            label="Original file"
+          />
+        </div>
+        <ChangedVersion
+          projectId={project.id}
+          files={files.data}
+          baseId={baseId}
+          source={source}
+          onSourceChange={setSource}
+          compareId={compareId}
+          onCompareIdChange={setCompareId}
+          pasted={pasted}
+          onPastedChange={setPasted}
+        />
       </div>
-      <ChangedVersion
-        projectId={project.id}
-        files={files.data}
-        baseId={baseId}
-        source={source}
-        onSourceChange={setSource}
-        compareId={compareId}
-        onCompareIdChange={setCompareId}
-        pasted={pasted}
-        onPastedChange={setPasted}
-      />
       <div className="max-w-sm">
         <ProviderSelect value={providerId} onChange={setProviderId} />
       </div>
@@ -131,11 +140,13 @@ function ChangedVersion({
 
   return (
     <fieldset className="space-y-2">
-      <legend className="text-sm font-medium">Version B: changed</legend>
-      <div className="flex gap-4 text-sm">
+      <legend className="text-sm font-medium">
+        <span className="font-mono text-ok">+</span> Changed
+      </legend>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         {(
           [
-            ["file", "Another file in this project"],
+            ["file", "Another project file"],
             ["paste", "Edited text"],
           ] as const
         ).map(([value, label]) => (

@@ -31,7 +31,7 @@ export default function ReviewHistoryPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl space-y-4 px-4 py-8">
+    <main className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="flex flex-col gap-2 sm:flex-row">
         <form onSubmit={search} className="flex flex-1 gap-2" role="search">
           <TextInput

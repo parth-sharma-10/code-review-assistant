@@ -59,14 +59,14 @@ export function FileTree({ files, activePath, selected, onOpen, onToggleSelect }
           key={node.path}
           role="treeitem"
           aria-selected={active}
-          className="group flex items-center"
+          className={`group flex items-center ${active ? "bg-marker/60" : "hover:bg-wash"}`}
         >
           <button
             onClick={() => onOpen(file)}
             style={indent}
             title={`${file.path} · ${formatBytes(file.size)}`}
-            className={`flex min-w-0 flex-1 items-center gap-1.5 py-[3px] pr-1 text-left ${
-              active ? "bg-marker/60 font-medium text-ink" : "text-ink hover:bg-wash"
+            className={`flex min-w-0 flex-1 items-center gap-1.5 py-[3px] pr-1 text-left text-ink ${
+              active ? "font-medium" : ""
             }`}
           >
             <span aria-hidden className="w-3" />

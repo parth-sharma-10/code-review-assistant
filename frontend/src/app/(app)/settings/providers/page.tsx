@@ -170,7 +170,9 @@ function ProviderRow({
         <p>
           <span className="font-medium">{p.name}</span>
           {p.isDefault && (
-            <span className="ml-2 rounded-[3px] bg-marker px-1.5 py-0.5 text-xs">default</span>
+            <span className="ml-2 rounded-[3px] border border-rule px-1.5 py-px font-mono text-[11px] text-ink-2">
+              default
+            </span>
           )}
         </p>
         <div className="flex flex-wrap gap-1">

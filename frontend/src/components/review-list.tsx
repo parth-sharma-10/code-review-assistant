@@ -1,8 +1,12 @@
 import Link from "next/link";
-import { formatDate, plural, REVIEW_TYPE_LABEL } from "@/lib/format";
+import { formatDate, formatShortDate, plural, REVIEW_TYPE_LABEL } from "@/lib/format";
 import type { ReviewSummary } from "@/lib/types";
-import { SeverityCounts } from "./severity";
+import { TallyCells, TallyHeaders } from "./severity";
 
+/**
+ * Reviews as a table: severity counts line up in columns so a column of criticals can be read
+ * down the page. The whole row is clickable through the link in its first cell.
+ */
 export function ReviewList({
   reviews,
   showProject,
@@ -11,44 +15,77 @@ export function ReviewList({
   showProject?: boolean;
 }) {
   return (
-    <ul className="divide-y divide-rule rounded-[4px] border border-rule bg-sheet">
-      {reviews.map((r) => {
-        const total = r.criticalCount + r.highCount + r.mediumCount + r.lowCount;
-        return (
-          <li key={r.id}>
-            <Link
-              href={`/projects/${r.project.id}/reviews/${r.id}`}
-              className="flex flex-col gap-3 px-4 py-3 hover:bg-wash sm:flex-row sm:items-center"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                  <span className="font-medium text-ink">{REVIEW_TYPE_LABEL[r.type]}</span>
-                  <span className="text-ink-3">
-                    {r.type === "ARCHITECTURE"
-                      ? `${plural(total, "concern")}`
-                      : plural(total, "issue")}
-                    {" · "}
-                    {scopeLabel(r)}
-                    {showProject && ` · ${r.project.name}`}
-                  </span>
-                </p>
-                <p className="mt-0.5 line-clamp-1 text-sm text-ink-2">{r.summary}</p>
-                <p className="mt-0.5 text-xs text-ink-3">
-                  {formatDate(r.createdAt)} · {r.model}
-                </p>
-              </div>
-              <SeverityCounts counts={r} />
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="overflow-hidden rounded-[4px] border border-rule bg-sheet">
+      <table className="w-full table-fixed border-collapse text-sm">
+        <thead className="border-b border-rule text-left text-xs text-ink-3">
+          <tr className="[&>th]:py-1.5 [&>th]:font-medium">
+            <th scope="col" className="pl-3">
+              Review
+            </th>
+            {showProject && (
+              <th scope="col" className="hidden w-40 pl-4 md:table-cell">
+                Project
+              </th>
+            )}
+            <th scope="col" className="hidden w-52 pl-4 lg:table-cell">
+              Scope
+            </th>
+            <TallyHeaders />
+            <th scope="col" className="hidden w-32 pr-3 text-right sm:table-cell">
+              When
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-rule">
+          {reviews.map((r) => (
+            <Row key={r.id} review={r} showProject={showProject} />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-function scopeLabel(r: ReviewSummary): string {
-  if (r.type === "DIFF") return r.filePaths[0] ?? "diff";
+function Row({ review: r, showProject }: { review: ReviewSummary; showProject?: boolean }) {
+  return (
+    <tr className="relative align-baseline hover:bg-wash focus-within:bg-wash">
+      <td className="min-w-0 py-2.5 pl-3">
+        <Link
+          href={`/projects/${r.project.id}/reviews/${r.id}`}
+          className="font-medium text-ink outline-none after:absolute after:inset-0 focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ink"
+        >
+          {REVIEW_TYPE_LABEL[r.type]}
+        </Link>
+        <p className="mt-0.5 truncate text-ink-2" title={r.summary}>
+          {r.summary}
+        </p>
+        <p className="mt-0.5 truncate font-mono text-xs text-ink-3 lg:hidden">
+          {showProject && `${r.project.name} · `}
+          {scopeLabel(r)}
+          <span className="sm:hidden"> · {formatShortDate(r.createdAt)}</span>
+        </p>
+      </td>
+      {showProject && (
+        <td className="hidden truncate pl-4 text-ink-2 md:table-cell">{r.project.name}</td>
+      )}
+      <td className="hidden truncate pl-4 font-mono text-xs text-ink-2 lg:table-cell">
+        {scopeLabel(r)}
+      </td>
+      <TallyCells counts={r} />
+      <td
+        className="hidden pr-3 text-right font-mono text-xs whitespace-nowrap text-ink-3 sm:table-cell"
+        title={formatDate(r.createdAt)}
+      >
+        {formatShortDate(r.createdAt)}
+      </td>
+    </tr>
+  );
+}
+
+export function scopeLabel(r: Pick<ReviewSummary, "type" | "scope" | "filePaths">): string {
+  if (r.type === "DIFF") return r.filePaths.join(" → ") || "diff";
+  if (r.type === "ARCHITECTURE") return "whole project";
   if (r.scope === "PROJECT") return "whole project";
   if (r.scope === "FILE") return r.filePaths[0];
-  return plural(r.filePaths.length, "file");
+  return r.filePaths.length <= 2 ? r.filePaths.join(", ") : plural(r.filePaths.length, "file");
 }

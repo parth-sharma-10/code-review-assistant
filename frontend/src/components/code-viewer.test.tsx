@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ReviewIssue } from "@/lib/types";
 import { CodeViewer } from "./code-viewer";
@@ -56,5 +56,19 @@ describe("CodeViewer", () => {
       "2",
       "3",
     ]);
+  });
+
+  it("in hunk mode shows only lines near a finding, and a gap expands in place", () => {
+    const long = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join("\n");
+    render(<CodeViewer path="a.ts" content={long} annotations={[issue(10, "Here")]} context={2} />);
+    expect(screen.queryByText("line 7")).toBeNull();
+    expect(screen.getByText("line 8")).toBeTruthy();
+    expect(screen.getByText("line 12")).toBeTruthy();
+    expect(screen.queryByText("line 13")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show lines 1–7" }));
+    expect(screen.getByText("line 1")).toBeTruthy();
+    expect(screen.getByText("line 7")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Show lines 13–20" })).toBeTruthy();
   });
 });

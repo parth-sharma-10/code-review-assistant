@@ -31,7 +31,7 @@ export default function ChatPage() {
 
   if (project._count.files === 0) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-8">
         <EmptyState title="Nothing to chat about yet">
           <Link
             href={`/projects/${project.id}`}
@@ -251,7 +251,7 @@ function Message({ message, projectId }: { message: ChatMessage; projectId: stri
   if (message.role === "USER") {
     return (
       <div className="mx-auto max-w-2xl">
-        <p className="ml-auto w-fit max-w-[85%] whitespace-pre-wrap rounded-[6px] bg-ink px-3 py-2 text-sm text-sheet">
+        <p className="ml-auto w-fit max-w-[85%] whitespace-pre-wrap rounded-[4px] border border-rule bg-sheet px-3 py-2 text-sm text-ink">
           {message.content}
         </p>
       </div>
@@ -264,8 +264,8 @@ function Message({ message, projectId }: { message: ChatMessage; projectId: stri
         <ReactMarkdown>{message.content}</ReactMarkdown>
       </div>
       {message.contextFiles.length > 0 && (
-        <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-ink-3">
-          <span>Based on:</span>
+        <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-rule pt-2 font-mono text-xs text-ink-3">
+          <span className="font-sans">Based on</span>
           {message.contextFiles.map((p) => (
             <Link
               key={p}

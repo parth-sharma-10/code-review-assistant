@@ -71,7 +71,6 @@ export function UploadZip({
         </Button>
         <span className="text-xs text-ink-3">
           Up to 20 MB. Dependencies, build output, binaries and secret files are skipped.
-          {hasFiles && " Replacing removes the current files; past reviews are kept."}
         </span>
       </div>
       <ErrorNote>{error}</ErrorNote>
