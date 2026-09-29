@@ -32,7 +32,7 @@ with any email and a password of 8+ characters. You land on the empty dashboard.
 
 ## 3. Upload the ZIP
 
-**Upload source (.zip)** → choose `docs/demo/demo-api.zip`. The result reads *Stored 8 files ·
+Drag `docs/demo/demo-api.zip` onto the upload area (or click it and choose the file). The result reads *Stored 8 files ·
 skipped 8*. Expand **Show skipped files** to see each file refused and why. The `demo-api-main/`
 wrapper folder is stripped automatically.
 
@@ -44,7 +44,7 @@ search file contents for `jsonwebtoken` and press Enter.
 
 ## 5. Configure an AI provider
 
-**AI providers → Add provider → Ollama** (or any preset) → **Add provider** → **Test connection**.
+**AI providers → Add provider → Ollama** (or any preset) → **Add provider** → **Test**.
 You should see "Connected in Ns". Afterwards the provider shows `no key` or `key saved`, never the key
 itself.
 
@@ -88,7 +88,7 @@ redraws the diff with the finding pinned under the changed line (pasted text is 
 **Edited text** review shows the findings without the diff). Alternatively choose
 **Edited text**, click **Start from auth.js** and edit it by hand.
 
-**Architecture analysis:** **Overview** tab → **Analyse architecture**. Expect components
+**Architecture analysis:** **Overview** tab → the **Architecture analysis** card. Expect components
 (server/auth/db), data flow, dependencies (`express`, `pg`, `jsonwebtoken`, taken from `package.json`)
 and concerns.
 
