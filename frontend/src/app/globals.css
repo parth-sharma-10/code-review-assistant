@@ -11,8 +11,8 @@
   --color-paper: #f7f8fa; /* page background: cool, not cream */
   --color-sheet: #ffffff; /* panels, code listing */
   --color-ink: #151b2b; /* text, primary buttons */
-  --color-ink-2: #4a5468; /* secondary text (7.4:1 on paper) */
-  --color-ink-3: #6b7486; /* tertiary text: captions, gutter numbers (4.6:1 on sheet) */
+  --color-ink-2: #4a5468; /* secondary text (7.2:1 on paper) */
+  --color-ink-3: #646d7f; /* tertiary text: captions, gutter numbers (≥4.5:1 on paper, sheet and wash) */
   --color-rule: #dde1e8; /* borders and dividers */
   --color-wash: #eef0f4; /* hover, selected tree rows, inputs */
   --color-marker: #ffe58f; /* highlighter: the line under review */
@@ -41,7 +41,7 @@
   --shiki-foreground: var(--color-ink);
   --shiki-background: var(--color-sheet);
   --shiki-token-keyword: var(--color-ink);
-  --shiki-token-comment: #6b7486;
+  --shiki-token-comment: var(--color-ink-3);
   --shiki-token-string: #2f6b4f;
   --shiki-token-string-expression: #2f6b4f;
   --shiki-token-constant: #7a3f8f;
