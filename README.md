@@ -68,7 +68,7 @@ start and lists every invalid variable. The frontend needs no env file for local
 | `NODE_ENV` | no | `production` adds the `Secure` flag to the session cookie. |
 | `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL` | no | Optional server-wide fallback provider, used only when a user has configured none. |
 | `AI_TIMEOUT_MS` | no | Per-request AI timeout (default 180000). |
-| `BACKEND_URL` (frontend) | no | Where Next.js proxies `/api/*` (default `http://localhost:4000`). |
+| `BACKEND_URL` (frontend) | no | Where Next.js proxies `/api/*` (default `http://localhost:4000`). Read when `next build` runs: rewrites are compiled into the build, so set it before building, not only before `next start`. |
 
 ## AI provider setup
 
@@ -91,7 +91,7 @@ exercised against their live services (see [AI_USAGE.md](AI_USAGE.md#verificatio
 
 ```bash
 npm test          # backend: Jest unit + integration (needs the Postgres container); frontend: Vitest
-npm run lint      # ESLint, zero warnings in both packages
+npm run lint      # ESLint, zero findings; enforces ≤100-line functions and complexity ≤8 in logic modules
 npm run build     # nest build + next build
 ```
 
@@ -100,7 +100,7 @@ npm run build     # nest build + next build
   app against a separate test database, with a fake OpenAI-compatible server. It covers registration and
   login, cookie attributes, IDOR checks on every nested route, API-key secrecy, review, chat, diff and
   architecture flows, pagination and search.
-- **Frontend (6 tests):** tree building, and the code viewer placing findings under the cited line.
+- **Frontend (11 tests):** tree building, review-scope resolution, and the code viewer placing findings under the cited line.
 
 ## Architecture
 

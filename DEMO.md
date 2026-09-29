@@ -106,5 +106,7 @@ PY
 # Upload /tmp/slip.zip in the UI -> "Invalid ZIP archive: invalid relative path: ../../evil.txt"
 ```
 
-Model output varies between runs and models. Weaker models sometimes miss an issue or rate its
-severity differently; the structure of the output is guaranteed by validation, but its judgement is not.
+Model output varies between runs and models. With `qwen2.5-coder:7b`, expect the planted issues to be
+found. Also expect some findings outside the selected focus: for example, the SQL injection often shows
+up in performance and quality reviews too, despite the prompt's focus rule. The structure of the output
+is guaranteed by validation; its judgement is not.

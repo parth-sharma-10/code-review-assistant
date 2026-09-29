@@ -24,7 +24,9 @@ This is an npm workspace (`backend/`, `frontend/`), so one install covers both.
 
 **npm 11 blocks install scripts by default.** The four packages that need them are pre-approved in the
 root `package.json` (`allowScripts`): `argon2` (native binding), `prisma`, `@prisma/engines` and
-`@prisma/client`. If `npm install` still warns about pending scripts for those four, run:
+`@prisma/client`. npm also lists `fsevents`, `unrs-resolver` and `@parcel/watcher` as
+"not yet covered by allowScripts": those are optional tooling scripts, and lint, test and build pass
+without them (verified from a fresh clone). If npm warns about the four required packages, run:
 
 ```bash
 npm approve-scripts argon2 prisma @prisma/engines @prisma/client && npm rebuild argon2 prisma @prisma/engines
@@ -78,10 +80,13 @@ Open http://localhost:3000. The frontend proxies `/api/*` to the backend, so you
 Production-style run:
 
 ```bash
-npm run build
+npm run build                              # set BACKEND_URL first if the API is not on :4000
 npm run start -w backend &                 # node dist/main
 npm run start -w frontend                  # next start on :3000
 ```
+
+`BACKEND_URL` is compiled into the frontend build (Next.js rewrites are resolved by `next build`).
+Changing it later requires rebuilding the frontend; setting it only for `next start` has no effect.
 
 ## 7. Configure an AI provider
 

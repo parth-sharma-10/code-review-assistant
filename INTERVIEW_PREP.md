@@ -411,4 +411,4 @@ Good candidates for "differently":
 | Rate limits | 120/min default; 10/min auth (per email) and AI (per user) | `common/rate-limits.ts` |
 | Session | 24 h, HS256 | `auth/auth.cookie.ts`, `auth.module.ts` |
 | Argon2id | 64 MiB, t=3, p=4 (library defaults) | node-argon2 |
-| Tests | 98 backend, 6 frontend | `npm test` |
+| Tests | 98 backend, 11 frontend | `npm test` |

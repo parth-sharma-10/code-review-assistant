@@ -48,7 +48,7 @@ All of it, from my specification:
 - **Backend:** every file in `backend/src/` (auth, projects, files and ZIP ingestion, providers, AI
   layer and prompts, reviews, chat), the Prisma schema and migrations, and configuration.
 - **Frontend:** every file in `frontend/src/`, and the visual design (tokens, type pairing, layout).
-- **Tests:** `backend/test/`, all `*.spec.ts`, and frontend `*.test.ts(x)`: 98 backend and 6 frontend.
+- **Tests:** `backend/test/`, all `*.spec.ts`, and frontend `*.test.ts(x)`: 98 backend and 11 frontend.
 - **Documentation:** every Markdown file, including this one, the research notes and the interview
   guide.
 - **Git history:** the agent split the work into feature commits after implementing it (see
@@ -88,6 +88,10 @@ These were real defects found by running things, not by inspection:
 | Code review of its own design | A cookie with an invalid token would loop between `/login` and the app | The API client clears the cookie before redirecting |
 | Production build | Spec files importing test helpers broke `nest build` | Specs excluded from the build tsconfig |
 | `npm audit` | High-severity advisory in the Prisma CLI's `deepmerge-ts` | Override attempted; it failed through an exact pin; documented with a reachability analysis in SECURITY.md |
+| Fresh-clone audit | `@prisma/client` was never generated in a fresh clone (its postinstall runs from the repo root, where there is no schema) | Backend `postinstall: prisma generate` |
+| Fresh-clone audit | A frontend built without `BACKEND_URL` and started with it silently proxied to the *old* dev backend: Next compiles rewrites at build time | Documented as a build-time variable (the audit caught it because the responses carried the old prompt version) |
+| Enforcing the project's function-size limits | Refactoring the review runner exposed a bug: "Selected files", cleared, with no open file, sent `FILE` with no file ids (a 400) | `resolveScope()` falls back to the whole project; 5 unit tests |
+| Same refactor | Provider "Make default" and "Delete" had no error handling | Errors now shown on the page |
 
 ## 6. Verification performed
 
@@ -101,6 +105,10 @@ These were real defects found by running things, not by inspection:
   Ollama `qwen2.5-coder:7b`.
 - **Manual via curl:** malicious archives (Zip Slip, absolute path, non-zip, 56 MB expansion, symlink,
   secrets); cross-user access; 12 MB and 25 MB uploads through both the proxy and the API directly.
+- **Fresh clone:** `git clone` → `npm install` → new empty database → migrations → lint → build →
+  all tests → the full DEMO.md flow (steps 1–11) through the frontend proxy with the real model. Every
+  documented output matched: 8 stored, 8 skipped with the listed reasons; the secret and injection at
+  `src/auth.js:2` and `:7`; the N+1 in `src/orders.js`; dependencies read from `package.json`.
 - **Browser:** sign-in, dashboard, review detail, finding → code navigation, running a review from the
   explorer, chat. Screenshots in `docs/screenshots/` were captured from a clean headless Chrome profile.
 - **Not verified:** OpenAI, OpenRouter and LM Studio were not called live. No API keys were available
@@ -125,6 +133,9 @@ not done.*
   remain possible.
 - Review quality depends on the configured model. With a 7B local model, findings were accurate on the
   planted issues, but the model misjudged in chat (it described `algorithm: 'none'` as "for
-  demonstration"). The application guarantees the *structure* of results, not their judgement.
+  demonstration"). It also kept reporting security issues in performance and quality reviews, despite
+  the tightened `review-v2` focus rule. During testing, one single-file security review (on the v1
+  prompt) failed validation twice and returned the designed 502. The application guarantees the
+  *structure* of results, not their judgement.
 - The research notes cite the sources fetched during the session. They are decision records, not
   literature reviews.
