@@ -6,6 +6,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ProjectsModule } from './projects/projects.module';
 import { FilesModule } from './files/files.module';
 import { ProvidersModule } from './providers/providers.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { AiErrorFilter } from './common/ai-error.filter';
 import { DEFAULT_RATE_LIMIT } from './common/rate-limits';
 import { UserThrottlerGuard } from './common/user-throttler.guard';
@@ -19,6 +20,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ProjectsModule,
     FilesModule,
     ProvidersModule,
+    ReviewsModule,
   ],
   providers: [
     // Order matters: authentication runs first so the throttler can key limits by user.
