@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/*
+ * Tokens: the only source of colour and type. Components use the Tailwind names below
+ * (bg-paper, text-ink-2, border-rule, ...), never raw hex or palette utilities.
+ *
+ * Concept: a printed code listing marked up by a reviewer. Cool paper, ink text,
+ * a highlighter for lines under review, and severity as the only other colour.
+ */
+@theme {
+  --color-paper: #f7f8fa; /* page background: cool, not cream */
+  --color-sheet: #ffffff; /* panels, code listing */
+  --color-ink: #151b2b; /* text, primary buttons */
+  --color-ink-2: #4a5468; /* secondary text (7.4:1 on paper) */
+  --color-ink-3: #6b7486; /* tertiary text: captions, gutter numbers (4.6:1 on sheet) */
+  --color-rule: #dde1e8; /* borders and dividers */
+  --color-wash: #eef0f4; /* hover, selected tree rows, inputs */
+  --color-marker: #ffe58f; /* highlighter: the line under review */
+  --color-marker-edge: #d9a800;
+
+  /* Severity: text-safe on white (all >= 4.5:1), each with a tint for backgrounds. */
+  --color-critical: #b4232c;
+  --color-critical-tint: #fbe9ea;
+  --color-high: #b24a06;
+  --color-high-tint: #fcefe4;
+  --color-medium: #7f5c00;
+  --color-medium-tint: #fbf3dc;
+  --color-low: #3d5a80;
+  --color-low-tint: #e8eef6;
+  --color-ok: #1f6f43;
+
+  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/*
+ * Syntax colours for the code listing (Shiki css-variables theme). Deliberately restrained:
+ * keywords are bold ink rather than a colour, so severity stays the loudest colour on screen.
+ */
+:root {
+  --shiki-foreground: var(--color-ink);
+  --shiki-background: var(--color-sheet);
+  --shiki-token-keyword: var(--color-ink);
+  --shiki-token-comment: #6b7486;
+  --shiki-token-string: #2f6b4f;
+  --shiki-token-string-expression: #2f6b4f;
+  --shiki-token-constant: #7a3f8f;
+  --shiki-token-function: #1d4e89;
+  --shiki-token-parameter: #4a5468;
+  --shiki-token-punctuation: #4a5468;
+  --shiki-token-link: #1d4e89;
+  --shiki-token-inserted: var(--color-ok);
+  --shiki-token-deleted: var(--color-critical);
+  --shiki-token-changed: var(--color-medium);
+}
+
+html {
+  font-size: 14px; /* developer-tool density; rem-based spacing scales from here */
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+::selection {
+  background: var(--color-marker);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+dialog::backdrop {
+  background: rgb(21 27 43 / 0.35);
+}
+
+/* Chat answers are Markdown. */
+.prose-answer p {
+  margin: 0.5em 0;
+  line-height: 1.6;
+}
+.prose-answer ul,
+.prose-answer ol {
+  margin: 0.5em 0;
+  padding-left: 1.4em;
+  list-style: disc;
+}
+.prose-answer ol {
+  list-style: decimal;
+}
+.prose-answer code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--color-wash);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+.prose-answer pre {
+  background: var(--color-sheet);
+  border: 1px solid var(--color-rule);
+  padding: 0.75em;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+.prose-answer pre code {
+  background: none;
+  padding: 0;
+}
+.prose-answer h1,
+.prose-answer h2,
+.prose-answer h3 {
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+}
