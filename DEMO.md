@@ -51,9 +51,9 @@ itself.
 ## 6. Security review (single file)
 
 Back to the project → **Code** → open `src/auth.js` → **Security** · **This file** → **Run review**.
-The review page shows the severity counts and findings for the hardcoded secret and the SQL
-injection. Click `src/auth.js:7`: the explorer opens with line 7 highlighted and the finding pinned
-beneath it.
+The review page groups findings by file and shows each one under the code it cites, with the line
+highlighted. Filter by severity, or press `j` / `k` to step through findings. Click `src/auth.js:7`:
+the explorer opens the whole file with line 7 highlighted and the finding pinned beneath it.
 
 ## 7. Performance review (selected files)
 
@@ -63,7 +63,7 @@ checkbox) → **Performance** · **Selected files** → **Run review**. Expect t
 
 ## 8. Code quality review (whole project)
 
-**Code** → **Code quality** · **Whole project** → **Run review**. The **Coverage** section lists every
+**Code** → **Quality** · **Whole project** → **Run review**. The **Coverage** section lists every
 file sent to the model. For large projects it also lists the files left out because they did not fit
 the context budget.
 
@@ -76,14 +76,16 @@ across projects.
 ## 10. Chat with the code
 
 **Chat → New chat** → click *Which file handles database connections?* The answer cites `src/db.js`
-and lists **Based on:** with the files retrieved for this question. Ask a follow-up such as *Is that
+and lists **Based on** with the files retrieved for this question. Ask a follow-up such as *Is that
 connection pooled?*; earlier turns are sent as history.
 
 ## 11. Bonus features
 
-**Diff review:** **Diff review** tab → Version A `src/auth.js`, Version B *Another file* →
+**Diff review:** **Diff review** tab → Original `src/auth.js`, Changed *Another project file* →
 `src/v2/auth.js` → **Review changes**. The model reviews only the changed lines and should flag the
-`algorithm: 'none'` JWT signing as a security problem introduced by the "fix". Alternatively choose
+`algorithm: 'none'` JWT signing as a security problem introduced by the "fix". The review page
+redraws the diff with the finding pinned under the changed line (pasted text is not stored, so an
+**Edited text** review shows the findings without the diff). Alternatively choose
 **Edited text**, click **Start from auth.js** and edit it by hand.
 
 **Architecture analysis:** **Overview** tab → **Analyse architecture**. Expect components
