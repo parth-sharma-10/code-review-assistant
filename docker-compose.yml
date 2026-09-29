@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cra-postgres
+    environment:
+      POSTGRES_USER: cra
+      POSTGRES_PASSWORD: cra_dev_password
+      POSTGRES_DB: code_review_assistant
+    ports:
+      # 5433 on the host so it does not collide with a locally installed Postgres on 5432.
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/prisma/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cra -d code_review_assistant"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

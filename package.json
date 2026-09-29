@@ -1,0 +1,27 @@
+{
+  "name": "code-review-assistant",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "db:up": "docker compose up -d postgres",
+    "dev:backend": "npm run start:dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "lint": "npm run lint -w backend && npm run lint -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "test": "npm test -w backend && npm test -w frontend",
+    "format": "prettier --write \"backend/{src,test}/**/*.ts\" \"frontend/src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"backend/{src,test}/**/*.ts\" \"frontend/src/**/*.{ts,tsx,css}\""
+  },
+  "allowScripts": {
+    "argon2@0.45.1": true,
+    "prisma@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "@prisma/client@6.19.3": true
+  },
+  "devDependencies": {
+    "prettier": "^3.9.9"
+  }
+}

@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects     Project[]
+  reviews      Review[]
+  aiProviders  AIProvider[]
+  chatSessions ChatSession[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(1000)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files        File[]
+  reviews      Review[]
+  chatSessions ChatSession[]
+
+  // Dashboard lists a user's projects newest-first.
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("projects")
+}
+
+model File {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @db.Uuid
+  // Normalised, forward-slash path relative to the archive root, e.g. "src/auth/auth.service.ts".
+  path      String   @db.VarChar(1024)
+  name      String   @db.VarChar(255)
+  extension String   @db.VarChar(32)
+  mimeType  String   @db.VarChar(100)
+  size      Int
+  content   String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // One row per path per project; also serves lookups by projectId.
+  @@unique([projectId, path])
+  @@map("files")
+}
+
+enum ReviewType {
+  SECURITY
+  PERFORMANCE
+  QUALITY
+  DIFF
+  ARCHITECTURE
+}
+
+enum ReviewScope {
+  FILE
+  FILES
+  PROJECT
+}
+
+model Review {
+  id        String      @id @default(uuid()) @db.Uuid
+  projectId String      @db.Uuid
+  userId    String      @db.Uuid
+  type      ReviewType
+  scope     ReviewScope
+  // Paths that were sent to the model, so a review stays interpretable after a re-upload.
+  filePaths String[]
+  summary   String
+  // Full validated model output. Shape depends on `type` (see ai/schemas).
+  result    Json
+  // Denormalised so history lists never need to parse `result`.
+  criticalCount Int @default(0)
+  highCount     Int @default(0)
+  mediumCount   Int @default(0)
+  lowCount      Int @default(0)
+  providerName  String
+  model         String
+  // Lower-cased summary + issue titles + file paths, so history search matches findings
+  // ("sql injection") without parsing JSON at query time.
+  searchText    String   @default("")
+  createdAt     DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("reviews")
+}
+
+enum ProviderType {
+  OPENAI
+  LM_STUDIO
+  OLLAMA
+  OPENROUTER
+  CUSTOM
+}
+
+model AIProvider {
+  id              String       @id @default(uuid()) @db.Uuid
+  userId          String       @db.Uuid
+  name            String       @db.VarChar(100)
+  // Informational only (UI presets). All types use the same OpenAI-compatible client.
+  type            ProviderType
+  baseUrl         String       @db.VarChar(500)
+  // AES-256-GCM "iv:authTag:ciphertext" (base64). Null for local servers without auth.
+  encryptedApiKey String?
+  model           String       @db.VarChar(200)
+  isDefault       Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@map("ai_providers")
+}
+
+model ChatSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @db.Uuid
+  userId    String   @db.Uuid
+  title     String   @db.VarChar(200)
+  createdAt DateTime @default(now())
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@map("chat_sessions")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model Message {
+  id           String      @id @default(uuid()) @db.Uuid
+  sessionId    String      @db.Uuid
+  role         MessageRole
+  content      String
+  // For assistant messages: the files retrieved as context, shown to the user as sources.
+  contextFiles String[]
+  createdAt    DateTime    @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("messages")
+}
