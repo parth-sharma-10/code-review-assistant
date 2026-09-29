@@ -30,8 +30,12 @@ The work followed the phases in the brief, in this order:
    components.
 6. **Browser testing,** which found the Next.js 10 MB body truncation, a layout overflow, a contrast
    problem and a stale counter. All fixed.
-7. **Formatting and linting** (Prettier at 100 columns, ESLint zero warnings), then frontend tests.
-8. **Git history,** then documentation and research notes, then the final audit.
+7. **Formatting and linting** (Prettier at 100 columns, ESLint with zero findings), then frontend tests.
+8. **Git history,** then documentation and research notes.
+9. **Audit:** a fresh-clone run of the whole demo, then enforcing the ≤100-line / complexity ≤8
+   function limits in ESLint. Splitting the long components exposed a scope-fallback bug and missing
+   error handling, both fixed. A phone-width check found and fixed two overflow problems, and a
+   computed contrast check raised the tertiary text colour.
 
 ## About the git history
 

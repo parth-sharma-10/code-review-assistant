@@ -203,7 +203,8 @@ provider-agnostic logic (prompts, validation, grounding) is in `AiService`, whic
 
 **24. Why not the OpenAI SDK?**
 It's a dependency for one HTTP call, and its defaults target OpenAI. `fetch` with a timeout, redirect
-refusal and error classification is about 60 lines I can read end to end. A new client per request is
+refusal and error classification fits in one ~110-line file (`chat-model.ts`, including the
+interface and error types) that I can read end to end. A new client per request is
 free: Node's global undici agent pools connections per origin.
 
 **25. Why don't you set `temperature: 0` or use JSON mode?**
